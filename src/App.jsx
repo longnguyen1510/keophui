@@ -4960,7 +4960,7 @@ function App() {
                     <div className="flex flex-col">
                       <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full bg-neon-green shadow-[0_0_8px_#10B981]"></span>
-                        🔥 Kèo Hot Chợ Hôm Nay - {String(new Date().getDate()).padStart(2, '0')}/{String(new Date().getMonth() + 1).padStart(2, '0')} 🔥
+                        🔥 Kèo Hot Chợ Hôm Nay - {String(new Date().getDate()).padStart(2, '0')}/{String(new Date().getMonth() + 1).padStart(2, '0')}
                       </h2>
                       <span className="text-[10px] text-slate-400 font-bold ml-4 mt-0.5 uppercase tracking-wide">
                         ⚡ Đang có <span className="text-neon-green font-extrabold">{filteredMatches.filter(m => m.status === 'Cần đối' || m.status === 'Đang chờ xác nhận' || m.status === 'waiting_opponent' || m.status === 'pending_confirmation').length} trận đấu</span> đang chờ nhận đối
