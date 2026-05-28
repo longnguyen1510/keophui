@@ -504,6 +504,9 @@ function App() {
       const [googleSelectedAccount, setGoogleSelectedAccount] = useState(null);
       const [googlePhoneInput, setGooglePhoneInput] = useState("");
       
+      // Collapsible Venue Facilities State
+      const [expandedFacilities, setExpandedFacilities] = useState({});
+      
       // Filter States
       const [filterDistrict, setFilterDistrict] = useState("Tất cả"); // Tất cả, Thủ Đức, Bình Thạnh, Quận 7, Gò Vấp
       const [filterTime, setFilterTime] = useState("Tất cả");       // Tất cả, Hôm nay, Ngày mai, Cuối tuần, Chọn ngày cụ thể
@@ -5397,27 +5400,42 @@ function App() {
                                     <span>📍</span> {venue.address}
                                   </p>
                                   
-                                  {/* Quick Venue Compact Badges - Dynamically linked to Owner's Control Panel configurations */}
-                                  <div className="flex flex-wrap gap-1 pt-1.5">
-                                    {(venue.facilities || ["📷 Camera sân", "⚖️ Thuê trọng tài", "🌧️ Cập nhật thời tiết", "📡 Livestream", "🏟️ Mái che", "👕 Thuê áo bib", "👟 Thuê giày", "🥇 Hay tổ chức giải"]).map(fac => {
-                                      let emoji = "";
-                                      if (fac === "Wifi") emoji = "📶 ";
-                                      else if (fac === "Đèn chiếu sáng") emoji = "💡 ";
-                                      else if (fac === "Gửi xe") emoji = "🅿️ ";
-                                      else if (fac === "Căn tin") emoji = "🥤 ";
-                                      else if (fac === "Nước free") emoji = "💧 ";
-                                      else if (fac === "Trọng tài") emoji = "🏁 ";
-                                      
-                                      return (
-                                        <span 
-                                          key={fac} 
-                                          className="text-[9px] font-bold text-slate-300 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/40"
-                                        >
-                                          {emoji}{fac}
-                                        </span>
-                                      );
-                                    })}
+                                  {/* Collapsible Amenities Toggle Button */}
+                                  <div className="pt-1 text-left">
+                                    <button 
+                                      onClick={() => setExpandedFacilities(prev => ({
+                                        ...prev,
+                                        [venue.id]: !prev[venue.id]
+                                      }))}
+                                      className="inline-flex items-center gap-1 text-[10px] font-bold text-neon-green bg-neon-green/10 border border-neon-green/20 px-2 py-0.5 rounded hover:bg-neon-green/20 transition-all focus:outline-none"
+                                    >
+                                      <span>⚙️</span> {expandedFacilities[venue.id] ? "Thu nhỏ tiện ích ▲" : "Xem tiện ích sân ▼"}
+                                    </button>
                                   </div>
+
+                                  {/* Quick Venue Compact Badges - Dynamically linked to Owner's Control Panel configurations - Collapsible */}
+                                  {expandedFacilities[venue.id] && (
+                                    <div className="flex flex-wrap gap-1 pt-1.5 animate-fade-in">
+                                      {(venue.facilities || ["📷 Camera sân", "⚖️ Thuê trọng tài", "🌧️ Cập nhật thời tiết", "📡 Livestream", "🏟️ Mái che", "👕 Thuê áo bib", "👟 Thuê giày", "🥇 Hay tổ chức giải"]).map(fac => {
+                                        let emoji = "";
+                                        if (fac === "Wifi") emoji = "📶 ";
+                                        else if (fac === "Đèn chiếu sáng") emoji = "💡 ";
+                                        else if (fac === "Gửi xe") emoji = "🅿️ ";
+                                        else if (fac === "Căn tin") emoji = "🥤 ";
+                                        else if (fac === "Nước free") emoji = "💧 ";
+                                        else if (fac === "Trọng tài") emoji = "🏁 ";
+                                        
+                                        return (
+                                          <span 
+                                            key={fac} 
+                                            className="text-[9px] font-bold text-slate-300 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/40"
+                                          >
+                                            {emoji}{fac}
+                                          </span>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
                                 </div>
                                 
                                 <div className="flex flex-col items-end space-y-1 shrink-0">
