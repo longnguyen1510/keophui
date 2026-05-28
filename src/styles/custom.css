@@ -1,0 +1,65 @@
+/* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #070A13;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #232E52;
+      border-radius: 99px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #10B981;
+    }
+    
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: #070A13;
+      color: #F8FAFC;
+    }
+
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* Hide scrollbar for IE, Edge and Firefox */
+    .no-scrollbar {
+      -ms-overflow-style: none;  /* IE and Edge */
+      scrollbar-width: none;  /* Firefox */
+    }
+
+    /* Glassmorphism utility */
+    .glass-nav {
+      background: rgba(13, 18, 34, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(35, 46, 82, 0.6);
+    }
+    
+    .glass-header {
+      background: linear-gradient(to bottom, rgba(13, 18, 34, 0.75), rgba(13, 18, 34, 0.95)), url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=600&q=80');
+      background-size: cover;
+      background-position: center;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .neon-glow-green {
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+    }
+
+    .neon-glow-yellow {
+      box-shadow: 0 0 15px rgba(250, 204, 21, 0.3);
+    }
+
+    .neon-glow-red {
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.35);
+    }
+
+    .text-shadow-green {
+      text-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }

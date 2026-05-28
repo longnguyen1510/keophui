@@ -1,0 +1,166 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id          String   @id @default(uuid())
+  name        String
+  email       String?  @unique
+  phone       String   @unique
+  avatar      String?
+  role        String   @default("player") // 'player', 'owner', 'admin'
+  position    String   @default("Cầu đá") // Vị trí yêu thích
+  rating      Float    @default(5.0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  venues      Venue[]
+  teams       Team[]
+  matches     Match[]
+  bookings    Booking[]
+
+  @@map("users")
+}
+
+model Venue {
+  id              String   @id @default(uuid())
+  ownerUserId     String
+  name            String
+  address         String
+  district        String
+  phone           String
+  rating          Float    @default(5.0)
+  activeStartHour Int      @default(6)
+  activeEndHour   Int      @default(24)
+  createdAt       DateTime @default(now())
+
+  owner           User     @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  fields          Field[]
+  slots           TimeSlot[]
+
+  @@map("venues")
+}
+
+model Field {
+  fieldId      String   @id @default(uuid())
+  venueId      String
+  fieldName    String   // Ví dụ: "Sân 5A", "Sân 7A"
+  fieldType    String   // "Sân 5", "Sân 7", "Sân 11"
+  defaultPrice Int
+  status       String   @default("active") // 'active', 'inactive'
+
+  venue        Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  slots        TimeSlot[]
+  combinationsAsTarget FieldCombination[] @relation("TargetField")
+  combinationsAsChild  FieldCombination[] @relation("ChildField")
+
+  @@map("fields")
+}
+
+model FieldCombination {
+  id            Int    @id @default(autoincrement())
+  venueId       String
+  targetFieldId String // Sân lớn (Ví dụ: 7A)
+  childFieldId  String // Sân nhỏ cấu thành (Ví dụ: 5A, 5B)
+
+  targetField   Field  @relation("TargetField", fields: [targetFieldId], references: [fieldId], onDelete: Cascade)
+  childField    Field  @relation("ChildField", fields: [childFieldId], references: [fieldId], onDelete: Cascade)
+
+  @@map("field_combinations")
+}
+
+model TimeSlot {
+  id            String   @id @default(uuid())
+  venueId       String
+  fieldId       String
+  dateLabel     String   // Định dạng 'YYYY-MM-DD'
+  timeSlot      String   // Nhãn hiển thị: '19:00 - 20:30'
+  price         Int
+  status        String   @default("available") // 'available', 'on_hold', 'booked', 'blocked'
+  customerName  String?
+  customerPhone String?
+  bookingNotes  String?
+  holdExpiresAt DateTime? // Dùng để khóa tạm thời 40 phút khi đang ghép kèo
+  createdAt     DateTime @default(now())
+
+  venue         Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  field         Field    @relation(fields: [fieldId], references: [fieldId], onDelete: Cascade)
+  bookings      Booking[]
+  matches       Match[]
+
+  @@map("time_slots")
+}
+
+model Team {
+  id            String   @id @default(uuid())
+  captainUserId String
+  name          String
+  level         String   @default("Vui vẻ")
+  avatar        String?
+  memberCount   Int      @default(1)
+  createdAt     DateTime @default(now())
+
+  captain       User     @relation(fields: [captainUserId], references: [id], onDelete: Cascade)
+  matches       Match[]
+
+  @@map("teams")
+}
+
+model Match {
+  id                 String   @id @default(uuid())
+  authorUserId       String
+  teamId             String?
+  teamName           String
+  venueSlotId        String?
+  status             String   // 'Cần đối', 'Thiếu người', 'confirmed', 'completed', 'cancelled'
+  time               String   // Nhãn hiển thị: '19:00 - 20:30 (28/05/2026)'
+  rawTime            String   // Định dạng ngày: '28/05/2026' hoặc 'YYYY-MM-DD'
+  venue              String
+  district           String
+  pitchType          String   // "Sân 5", "Sân 7", "Sân 11"
+  level              String   @default("Vui vẻ")
+  fee                String?
+  notes              String?
+  missingCount       Int      @default(0)
+  initialMissingCount Int     @default(0)
+  position           String?
+  createdAt          DateTime @default(now())
+
+  author             User     @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+  team               Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  timeSlot           TimeSlot? @relation(fields: [venueSlotId], references: [id], onDelete: SetNull)
+
+  @@map("matches")
+}
+
+model Booking {
+  id            String   @id @default(uuid())
+  userId        String
+  slotId        String
+  bookingCode   String   @unique
+  status        String   @default("confirmed") // 'confirmed', 'cancelled'
+  price         Int
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slot          TimeSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+
+  @@map("bookings")
+}
+
+model Notification {
+  id             String   @id @default(uuid())
+  recipientPhone String
+  type           String   // 'booking_holding', 'match_invite', 'system'
+  title          String
+  message        String   @db.Text
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@map("notifications")
+}
