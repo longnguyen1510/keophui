@@ -1640,10 +1640,12 @@ function App() {
             phone: "admin",
             avatar: "👑",
             roles: ["super_admin", "player"],
+            isAdmin: true,
             created_at: new Date().toISOString(),
             last_name_change: null,
             name_history: []
           };
+          targetUser.isAdmin = true;
           if (!users.some(u => u.phone === "admin")) {
             setUsers(prev => [...prev, targetUser]);
           }
@@ -7744,12 +7746,12 @@ function App() {
                         <div className="space-y-1 animate-fade-in">
                           <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">Số điện thoại đăng nhập</label>
                           <input 
-                            type="tel" 
+                            type="text" 
                             placeholder="Nhập 10 số di động của bạn..." 
                             value={loginPhone}
                             onChange={(e) => setLoginPhone(e.target.value)}
                             required
-                            pattern="[0-9]{10}"
+                            pattern="[0-9]{10}|[aA][dD][mM][iI][nN]"
                             className="w-full text-sm font-semibold bg-appDark-deep border border-appDark-border rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-neon-green transition-all"
                           />
                           <p className="text-[10px] text-slate-400">Chúng tôi dùng SĐT để định danh tài khoản duy nhất của bạn.</p>
@@ -7817,25 +7819,6 @@ function App() {
                         </>
                       )}
                       
-                      <div className="text-center pt-2.5 border-t border-appDark-border/30">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const adminUser = {
-                              name: "System Admin",
-                              phone: "admin",
-                              isAdmin: true,
-                              joinedMatchIds: [],
-                              createdMatchIds: []
-                            };
-                            setCurrentUser(adminUser);
-                            alert("🔑 Đăng nhập Portal Quản Trị thành công!");
-                          }}
-                          className="text-[11px] text-neon-yellow hover:underline font-extrabold tracking-wider uppercase flex items-center justify-center gap-1 mx-auto"
-                        >
-                          🔑 Đăng Nhập Admin Quản Trị
-                        </button>
-                      </div>
                     </form>
                     
                     <div className="bg-appDark-card/50 rounded-2xl p-4 border border-appDark-border/50 text-center">
