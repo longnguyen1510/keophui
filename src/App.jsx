@@ -4652,7 +4652,7 @@ function App() {
             <div className="sticky top-0 z-50 w-full flex flex-col shadow-md">
               <header className="glass-header relative z-50 px-3 py-2 flex items-center justify-between border-b border-appDark-border/30 bg-appDark-bg/95 backdrop-blur-md">
                 <div className="flex items-center gap-2" onClick={() => resetFilters()}>
-                  <img src="./image/logo1.png" alt="Kèo Phủi" className="w-8 h-8 object-contain drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] cursor-pointer" />
+                  <img src="/logo1.png" alt="Kèo Phủi" className="w-8 h-8 object-contain drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] cursor-pointer" />
                   <div>
                     <h1 className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-100 to-neon-green bg-clip-text text-transparent cursor-pointer">
                       KÈO PHỦI
@@ -4765,7 +4765,7 @@ function App() {
                 <div 
                   className="relative h-28 rounded-2xl overflow-hidden border border-appDark-border shadow-lg flex items-center justify-between p-4 group"
                   style={{
-                    backgroundImage: "url('./image/soccer_field_banner_bg.png')",
+                    backgroundImage: "url('/soccer_field_banner_bg.png')",
                     backgroundSize: 'cover',
                     backgroundPosition: 'center 60%'
                   }}
@@ -5088,7 +5088,7 @@ function App() {
                       <div 
                         className="relative h-28 rounded-2xl overflow-hidden border border-appDark-border shadow-lg flex items-center justify-between p-4 group mb-4"
                         style={{
-                          backgroundImage: "url('./image/soccer_field_banner_bg.png')",
+                          backgroundImage: "url('/soccer_field_banner_bg.png')",
                           backgroundSize: 'cover',
                           backgroundPosition: 'center 60%'
                         }}
@@ -5636,7 +5636,7 @@ function App() {
                 
                 {/* 0. TEAM MATCH BANNER */}
                 <div className="relative w-full rounded-2xl overflow-hidden shadow-lg border border-appDark-border">
-                  <img src="./image/teammatch.png" alt="Team Match" className="w-full h-auto object-cover" />
+                  <img src="/teammatch.png" alt="Team Match" className="w-full h-auto object-cover" />
                 </div>
 
                 {/* HEAD & ACTIONS */}
@@ -8287,7 +8287,7 @@ function App() {
                       <div 
                         className="relative h-28 rounded-2xl overflow-hidden border border-appDark-border shadow-lg flex items-center justify-between p-4 group mb-4"
                         style={{
-                          backgroundImage: "url('./image/soccer_field_banner_bg.png')",
+                          backgroundImage: "url('/soccer_field_banner_bg.png')",
                           backgroundSize: 'cover',
                           backgroundPosition: 'center 60%'
                         }}
