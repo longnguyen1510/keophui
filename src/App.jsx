@@ -3043,6 +3043,7 @@ function App() {
           fieldName: newSlot.fieldName,
           venue_slot_id: newSlotId,
           phone: currentUser.phone, // Kèo public vẫn dùng sđt chủ sân để liên hệ
+          adminContact: currentUser.phone, // Dùng sđt chủ sân để duyệt/nhận kèo
           status: "Cần đối",
           level: formData.level,
           category: formData.category || "Kèo Nam",
@@ -10989,7 +10990,7 @@ function App() {
             )}
 
             {/* RIVAL TEAM MATCHMAKER APPROVAL PANEL */}
-            {isOwner && (match.status === "waiting_opponent" || match.status === "pending_confirmation") && (
+            {isOwner && (match.status === "waiting_opponent" || match.status === "pending_confirmation" || match.status === "Cần đối") && (
               <div className="space-y-2 border-t border-appDark-border/50 pt-3 text-left animate-fade-in">
                 <div className="flex justify-between items-center">
                   <h4 className="text-[11px] font-black text-neon-yellow uppercase tracking-wider flex items-center gap-1.5">
@@ -11335,7 +11336,7 @@ function App() {
                 </button>
               ) : (
                 <>
-                  {match.status === "Cần đối" && (
+                  {(match.status === "Cần đối" || match.status === "waiting_opponent") && (
                     <button 
                       onClick={() => onAction('receive')}
                       className="w-2/3 font-bold uppercase tracking-wider bg-gradient-to-r from-neon-green to-emerald-500 text-appDark-deep py-3.5 rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md neon-glow-green text-xs"
