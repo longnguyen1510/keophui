@@ -6891,6 +6891,21 @@ function App() {
                                 return;
                               }
 
+                              // Check if there is an overlapping block for the same field, same day of week, same venue
+                              const overlappingBlock = recurringBlocks.find(block => {
+                                if (block.venueId === myVenue.id && block.fieldId === recFieldId && block.dayOfWeek === recDayOfWeek) {
+                                  const bStart = parseInt(block.startTime.split(':')[0]) * 60 + parseInt(block.startTime.split(':')[1]);
+                                  const bEnd = parseInt(block.endTime.split(':')[0]) * 60 + parseInt(block.endTime.split(':')[1]);
+                                  return startMins < bEnd && endMins > bStart;
+                                }
+                                return false;
+                              });
+
+                              if (overlappingBlock) {
+                                alert(`⚠️ Không thể đăng ký lịch cố định! Khung giờ này bị trùng lặp với lịch cố định đã có của đội "${overlappingBlock.teamName}" (${overlappingBlock.startTime} - ${overlappingBlock.endTime})!`);
+                                return;
+                              }
+
                               const newBlock = {
                                 id: `rec_${Date.now()}`,
                                 venueId: myVenue.id,
@@ -6907,7 +6922,7 @@ function App() {
 
                               // Update corresponding slots in 30 days to 'blocked'
                               setSlots(prevSlots => prevSlots.map(s => {
-                                if (s.fieldId === recFieldId && s.venueId === myVenue.id) {
+                                if (s.fieldId === recFieldId && (s.venueId === myVenue.id || myFieldIds.includes(s.fieldId))) {
                                   const dateStr = s.date || s.rawTime || s.rawDate || (s.timeSlot && s.timeSlot.split(' ').length >= 4 ? s.timeSlot.split(' ').slice(3).join(' ') : null);
                                   if (!dateStr) return s;
                                   const dateParts = parseDateStr(dateStr);
@@ -6965,7 +6980,7 @@ function App() {
                                         const endMins = parseInt(block.endTime.split(':')[0]) * 60 + parseInt(block.endTime.split(':')[1]);
 
                                         setSlots(prevSlots => prevSlots.map(s => {
-                                          if (s.fieldId === block.fieldId && s.venueId === myVenue.id) {
+                                          if (s.fieldId === block.fieldId && (s.venueId === myVenue.id || myFieldIds.includes(s.fieldId))) {
                                             const dateStr = s.date || s.rawTime || s.rawDate || (s.timeSlot && s.timeSlot.split(' ').length >= 4 ? s.timeSlot.split(' ').slice(3).join(' ') : null);
                                             if (!dateStr) return s;
                                             const dateParts = parseDateStr(dateStr);
