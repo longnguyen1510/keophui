@@ -3045,6 +3045,7 @@ function App() {
           phone: currentUser.phone, // Kèo public vẫn dùng sđt chủ sân để liên hệ
           status: "Cần đối",
           level: formData.level,
+          category: formData.category || "Kèo Nam",
           fee: newSlot.price,
           type: "Tìm đối",
           author_user_id: currentUser.id,
@@ -13173,6 +13174,7 @@ function App() {
       const [teamName, setTeamName] = useState("");
       const [customerPhone, setCustomerPhone] = useState("");
       const [level, setLevel] = useState("Trung bình");
+      const [category, setCategory] = useState("Kèo Nam");
       const [notes, setNotes] = useState("");
 
       useEffect(() => {
@@ -13223,6 +13225,7 @@ function App() {
           teamName: teamName.trim(),
           customerPhone: customerPhone.trim(),
           level,
+          category,
           notes: notes.trim()
         });
       };
@@ -13263,14 +13266,24 @@ function App() {
                     <input type="tel" required pattern="[0-9]{10}" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="SĐT khách..." className="w-full text-xs font-semibold bg-appDark-deep border border-appDark-border rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500" />
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400">Trình Độ Yêu Cầu</label>
-                  <select value={level} onChange={e => setLevel(e.target.value)} className="w-full text-xs font-semibold bg-appDark-deep border border-appDark-border rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500">
-                    <option value="Yếu">Yếu - đá chơi vui vẻ</option>
-                    <option value="Trung bình">Trung bình - giao lưu nhẹ nhàng</option>
-                    <option value="Khá">Khá - đá nhiệt tình</option>
-                    <option value="Mạnh">Mạnh - đá căng hết sức</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400">Trình Độ Yêu Cầu</label>
+                    <select value={level} onChange={e => setLevel(e.target.value)} className="w-full text-xs font-semibold bg-appDark-deep border border-appDark-border rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500">
+                      <option value="Yếu">Yếu - chơi vui vẻ</option>
+                      <option value="Trung bình">Trung bình - giao lưu</option>
+                      <option value="Khá">Khá - nhiệt tình</option>
+                      <option value="Mạnh">Mạnh - căng sức</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400">Đối Tượng (Kèo)</label>
+                    <select value={category} onChange={e => setCategory(e.target.value)} className="w-full text-xs font-semibold bg-appDark-deep border border-appDark-border rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500">
+                      <option value="Kèo Nam">🙋‍♂️ Kèo Nam</option>
+                      <option value="Kèo Nữ">🙋‍♀️ Kèo Nữ</option>
+                      <option value="Lão Tướng">👴 Lão Tướng</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
