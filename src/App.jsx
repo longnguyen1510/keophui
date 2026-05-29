@@ -3739,8 +3739,17 @@ function App() {
           team_id: teamId,
           teamName: teamName,
           status: "waiting_opponent", // waiting_opponent (Đang chờ đối)
-          time: slot.timeSlot,
-          rawTime: slot.rawTime,
+          time: (slot.timeSlot && slot.timeSlot.split(' ').length >= 4)
+            ? slot.timeSlot
+            : `${slot.timeSlot || ''} ${(() => {
+                const parts = parseDateStr(slot.rawTime || slot.rawDate || slot.date);
+                if (!parts) {
+                  const d = new Date();
+                  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+                }
+                return `${String(parts[2]).padStart(2, '0')}/${String(parts[1]).padStart(2, '0')}/${parts[0]}`;
+              })()}`,
+          rawTime: slot.rawTime || slot.rawDate || slot.date,
           venue: slot.venueName,
           district: slot.district,
           pitchType: slot.pitchType,
@@ -3941,8 +3950,17 @@ function App() {
           team_id: teamId,
           teamName: myTeamName,
           status: "pending_confirmation", // Directly pending confirmation
-          time: slot.timeSlot,
-          rawTime: slot.rawTime,
+          time: (slot.timeSlot && slot.timeSlot.split(' ').length >= 4)
+            ? slot.timeSlot
+            : `${slot.timeSlot || ''} ${(() => {
+                const parts = parseDateStr(slot.rawTime || slot.rawDate || slot.date);
+                if (!parts) {
+                  const d = new Date();
+                  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+                }
+                return `${String(parts[2]).padStart(2, '0')}/${String(parts[1]).padStart(2, '0')}/${parts[0]}`;
+              })()}`,
+          rawTime: slot.rawTime || slot.rawDate || slot.date,
           venue: slot.venueName,
           district: slot.district,
           pitchType: slot.pitchType,
@@ -9953,7 +9971,7 @@ function App() {
       const slotsLeft = Math.max(0, maxCount - acceptedCount);
       const isFull = slotsLeft === 0;
 
-      const isSlotFriendlyMatch = match.status === 'waiting_opponent' || match.status === 'pending_confirmation' || match.status === 'confirmed' || match.status === 'completed';
+      const isSlotFriendlyMatch = !!match.venue_slot_id || match.status === 'waiting_opponent' || match.status === 'pending_confirmation' || match.status === 'confirmed' || match.status === 'completed';
 
       const endTimeMs = parseMatchEndTimeMs(match.time, match.rawTime || match.rawDate) || parseMatchStartTime(match.time, match.rawTime);
       const isOngoingOrPast = endTimeMs && (Date.now() >= endTimeMs);
