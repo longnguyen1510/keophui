@@ -6908,8 +6908,12 @@ function App() {
                               // Update corresponding slots in 30 days to 'blocked'
                               setSlots(prevSlots => prevSlots.map(s => {
                                 if (s.fieldId === recFieldId && s.venueId === myVenue.id) {
-                                  const [dy, mn, yr] = s.date.split('/');
-                                  const sDate = new Date(Number(yr), Number(mn) - 1, Number(dy));
+                                  const dateStr = s.date || s.rawTime || s.rawDate || (s.timeSlot && s.timeSlot.split(' ').length >= 4 ? s.timeSlot.split(' ').slice(3).join(' ') : null);
+                                  if (!dateStr) return s;
+                                  const dateParts = parseDateStr(dateStr);
+                                  if (!dateParts) return s;
+                                  const [yr, mn, dy] = dateParts;
+                                  const sDate = new Date(yr, mn - 1, dy);
                                   
                                   if (sDate.getDay() === recDayOfWeek) {
                                     const [sH, sM] = s.startTime.split(':').map(Number);
@@ -6962,8 +6966,12 @@ function App() {
 
                                         setSlots(prevSlots => prevSlots.map(s => {
                                           if (s.fieldId === block.fieldId && s.venueId === myVenue.id) {
-                                            const [dy, mn, yr] = s.date.split('/');
-                                            const sDate = new Date(Number(yr), Number(mn) - 1, Number(dy));
+                                            const dateStr = s.date || s.rawTime || s.rawDate || (s.timeSlot && s.timeSlot.split(' ').length >= 4 ? s.timeSlot.split(' ').slice(3).join(' ') : null);
+                                            if (!dateStr) return s;
+                                            const dateParts = parseDateStr(dateStr);
+                                            if (!dateParts) return s;
+                                            const [yr, mn, dy] = dateParts;
+                                            const sDate = new Date(yr, mn - 1, dy);
                                             
                                             if (sDate.getDay() === block.dayOfWeek) {
                                               const [sH, sM] = s.startTime.split(':').map(Number);
