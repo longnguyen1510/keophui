@@ -16,89 +16,8 @@ import { checkOverlappingMatch } from './utils/match.js';
     const STORAGE_PREFIX = "keophui_";
 
     // --- PREMIUM MULTI-ROLE DATA SCHEMAS ---
-            const SEED_TEAMS = [
-      {
-        id: "t1",
-        name: "FC Anh Em",
-        district: "Thủ Đức",
-        level: "Trung bình",
-        owner_user_id: "u_0901234567",
-        invite_code: "FC-8392",
-        invite_link: "/team/fc-anh-em/join",
-        phone: "0901234567",
-        timePreference: "19:00 - 21:00 Tối trong tuần",
-        representative: "Anh Quân",
-        created_at: new Date().toISOString(),
-        members: [
-          { user_id: "u_0901234567", role: "owner", status: "joined", name: "Anh Quân" },
-          { user_id: "u_0956789012", role: "admin", status: "joined", name: "Tuấn Hài" }
-        ],
-        matchCount: 15,
-        winRate: "60%",
-        rating: 4.6,
-        cancellationRate: "thấp"
-      },
-      {
-        id: "t2",
-        name: "FC Lão Tướng",
-        district: "Bình Thạnh",
-        level: "Vui vẻ",
-        owner_user_id: "u_0912345678",
-        invite_code: "FC-4720",
-        invite_link: "/team/fc-lao-tuong/join",
-        phone: "0912345678",
-        timePreference: "20:00 - 22:00 Thứ 3 & Thứ 5",
-        representative: "Chú Nam",
-        created_at: new Date().toISOString(),
-        members: [
-          { user_id: "u_0912345678", role: "owner", status: "joined", name: "Chú Nam" }
-        ],
-        matchCount: 42,
-        winRate: "45%",
-        rating: 4.9,
-        cancellationRate: "cực thấp"
-      },
-      {
-        id: "t3",
-        name: "FC Phủi Q7",
-        district: "Quận 7",
-        level: "Mạnh",
-        owner_user_id: "u_0934567890",
-        invite_code: "FC-9087",
-        invite_link: "/team/fc-phui-q7/join",
-        phone: "0934567890",
-        timePreference: "18:00 - 20:00 Tối cuối tuần",
-        representative: "Cường Phủi",
-        created_at: new Date().toISOString(),
-        members: [
-          { user_id: "u_0934567890", role: "owner", status: "joined", name: "Cường Phủi" }
-        ],
-        matchCount: 28,
-        winRate: "75%",
-        rating: 4.8,
-        cancellationRate: "thấp"
-      },
-      {
-        id: "t4",
-        name: "FC Trẻ Gò Vấp",
-        district: "Gò Vấp",
-        level: "Mạnh",
-        owner_user_id: "u_0923456789",
-        invite_code: "FC-3392",
-        invite_link: "/team/fc-tre-go-vap/join",
-        phone: "0923456789",
-        timePreference: "18:00 - 20:00 Hàng ngày",
-        representative: "Huy Captain",
-        created_at: new Date().toISOString(),
-        members: [
-          { user_id: "u_0923456789", role: "owner", status: "joined", name: "Huy Captain" }
-        ],
-        matchCount: 33,
-        winRate: "70%",
-        rating: 4.5,
-        cancellationRate: "thấp"
-      }
-    ];
+            const SEED_TEAMS = [];
+
 
     // --- MOCK DATA ---
                 // Live events list to feed the real-time ticker
@@ -323,12 +242,8 @@ const formatPrice = (priceStr) => {
       );
     }
 
-    const INITIAL_FIELDS = [
-      // Sân Cá Sấu Hoa Cà (v_casau)
-      { fieldId: "f_casau_5a", venueId: "v_casau", fieldName: "Sân 5A", fieldType: "Sân 5", defaultPrice: 270000, price60: 180000, price90: 270000, price120: 350000, status: "active" },
-      { fieldId: "f_casau_5b", venueId: "v_casau", fieldName: "Sân 5B", fieldType: "Sân 5", defaultPrice: 270000, price60: 180000, price90: 270000, price120: 350000, status: "active" },
-      { fieldId: "f_casau_7a", venueId: "v_casau", fieldName: "Sân 7A", fieldType: "Sân 7", defaultPrice: 480000, price60: 320000, price90: 480000, price120: 620000, status: "active" },
-    ];
+    const INITIAL_FIELDS = [];
+
 
     const INITIAL_RECURRING_BLOCKS = [];
 
@@ -491,6 +406,28 @@ function App() {
         const stored = getStorageItem("teams", SEED_TEAMS);
         return Array.isArray(stored) ? stored : SEED_TEAMS;
       });
+
+      // Analytics & Event Tracking State
+      const [analyticsEvents, setAnalyticsEvents] = useState(() => {
+        const stored = getStorageItem("analyticsEvents", []);
+        return Array.isArray(stored) ? stored : [];
+      });
+
+      // Centralized Event Tracking Function
+      const trackEvent = (eventType, userId, details = {}) => {
+        const newEvent = {
+          id: 'ev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+          eventType,
+          userId: userId || 'anonymous',
+          timestamp: new Date().toISOString(),
+          details
+        };
+        setAnalyticsEvents(prev => {
+          const updated = [newEvent, ...prev];
+          if (updated.length > 2000) return updated.slice(0, 2000); // Limit to latest 2000
+          return updated;
+        });
+      };
       
       // User Profile Auth State
       const [currentUser, setCurrentUser] = useState(() => getStorageItem("user", null));
@@ -520,6 +457,12 @@ function App() {
         try { return localStorage.getItem("activeRoleMode") || "cầu thủ"; } catch { return "cầu thủ"; }
       });
       const [adminSubTab, setAdminSubTab] = useState("history"); // 'history' | 'manage' | 'pitch_owners'
+      const [adminVenueSubTab, setAdminVenueSubTab] = useState("venues"); // 'venues' | 'registrations' | 'slots'
+      const [adminVenueSearch, setAdminVenueSearch] = useState("");
+      const [adminSlotFilterVenue, setAdminSlotFilterVenue] = useState("all");
+      const [adminSlotFilterStatus, setAdminSlotFilterStatus] = useState("all");
+      const [adminSlotFilterDate, setAdminSlotFilterDate] = useState("");
+      const [adminSelectedSlotForDetail, setAdminSelectedSlotForDetail] = useState(null);
       const [ownerSubTab, setOwnerSubTab] = useState("lich_san"); // 'cum_san' | 'san_con' | 'lich_san' | 'khach_co_dinh'
       const [ownerCalDate, setOwnerCalDate] = useState("Hôm nay");
       const [filterTeamSearch, setFilterTeamSearch] = useState(""); // Search teams by name or code
@@ -780,58 +723,49 @@ function App() {
         setStorageItem("teams", teams);
       }, [teams]);
 
+      useEffect(() => {
+        setStorageItem("analyticsEvents", analyticsEvents);
+      }, [analyticsEvents]);
+
       // One-time self-healing trigger to clean mock matches and reset slots as requested by the user
       useEffect(() => {
-        const hasCleanedMockups = localStorage.getItem("cleaned_mockups_v2");
+        const hasCleanedMockups = localStorage.getItem("cleaned_mockups_v3");
         if (!hasCleanedMockups) {
           // Clear matches
           setMatches([]);
           setStorageItem("matches", []);
           
-          // Clear venues to only have v_casau
-          const filteredVenues = [
-            {
-              id: "v_casau",
-              owner_user_id: "u_0901111112",
-              name: "Sân Cá Sấu Hoa Cà",
-              address: "123 Phạm Văn Đồng, Thủ Đức",
-              district: "Thủ Đức",
-              phone: "0901111112",
-              images: "stadium1",
-              verification_status: "verified",
-              capacities: { '5': 3, '7': 2, '11': 1 },
-              combinations: [{ target: '7A', parts: ['5A', '5B'] }],
-              notes: "Sân nhà của chủ tài khoản mặc định.",
-              facilities: ["📷 Camera sân", "⚖️ Thuê trọng tài", "🌧️ Cập nhật thời tiết", "📡 Livestream", "🏟️ Mái che", "👕 Thuê áo bib", "👟 Thuê giày", "🥇 Hay tổ chức giải"],
-              activeStartHour: 6,
-              activeEndHour: 24
-            }
-          ];
-          setVenues(filteredVenues);
-          setStorageItem("venues", filteredVenues);
+          // Clear venues
+          setVenues([]);
+          setStorageItem("venues", []);
 
-          // Clear fields to only have v_casau fields
-          const filteredFields = [
-            { fieldId: "f_casau_5a", venueId: "v_casau", fieldName: "Sân 5A", fieldType: "Sân 5", defaultPrice: 270000, price60: 180000, price90: 270000, price120: 350000, status: "active" },
-            { fieldId: "f_casau_5b", venueId: "v_casau", fieldName: "Sân 5B", fieldType: "Sân 5", defaultPrice: 270000, price60: 180000, price90: 270000, price120: 350000, status: "active" },
-            { fieldId: "f_casau_7a", venueId: "v_casau", fieldName: "Sân 7A", fieldType: "Sân 7", defaultPrice: 480000, price60: 320000, price90: 480000, price120: 620000, status: "active" },
-          ];
-          setFields(filteredFields);
-          setStorageItem("fields", filteredFields);
+          // Clear fields
+          setFields([]);
+          setStorageItem("fields", []);
           
-          // Reset slots to only have v_casau fields
-          const newSlots = generateSlotsForFields(filteredFields, filteredVenues, []);
-          setSlots(newSlots);
-          setStorageItem("slots", newSlots);
+          // Clear slots
+          setSlots([]);
+          setStorageItem("slots", []);
           
-          // Reset recurring blocks
+          // Clear recurring blocks
           setRecurringBlocks([]);
           setStorageItem("recurringBlocks", []);
 
-          // Clear mock venue owners
-          setUsers(prev => prev.filter(u => !["0908765432", "0918765432", "0928765432"].includes(u.phone)));
+          // Clear teams
+          setTeams([]);
+          setStorageItem("teams", []);
+
+          // Clear users (except current user if they are logged in)
+          setUsers(prev => {
+             const currentUser = getStorageItem("user", null);
+             if (currentUser) {
+               // Ensure the current user is preserved
+               return [currentUser];
+             }
+             return [];
+          });
           
-          localStorage.setItem("cleaned_mockups_v2", "true");
+          localStorage.setItem("cleaned_mockups_v3", "true");
         }
       }, []);
 
@@ -7969,403 +7903,1554 @@ function App() {
                       </div>
                     </div>
 
-                    {/* PENDING NOTIFICATION ALERTS */}
-                    {venues.filter(v => v.verification_status === "pending_verification").length > 0 && (
-                      <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3.5 flex items-center justify-between text-xs animate-pulse">
-                        <div className="space-y-0.5">
-                          <p className="font-extrabold text-red-400">🚨 Yêu Cầu Duyệt Chủ Sân Mới!</p>
-                          <p className="text-[10px] text-slate-400">
-                            Có <strong>{venues.filter(v => v.verification_status === "pending_verification").length} sân bóng</strong> đang chờ xét duyệt quyền đối tác.
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setProfileMatchTab("manage");
-                            setAdminSubTab("pitch_owners");
-                          }}
-                          className="text-[10px] font-black bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg transition-all shadow shrink-0"
+                    {/* Role Switcher */}
+                    <div className="flex items-center justify-between bg-appDark-deep p-1.5 rounded-xl border border-appDark-border">
+                      <span className="text-xs font-semibold text-slate-400 pl-2">Xem với tư cách:</span>
+                      <div className="flex bg-appDark-card rounded-lg p-0.5">
+                        <button 
+                          onClick={() => setActiveRoleMode("admin")}
+                          className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-md transition-all ${
+                            activeRoleMode === "admin"
+                              ? "bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-md"
+                              : "text-slate-500 hover:text-slate-300"
+                          }`}
                         >
-                          Xem Ngay ➜
+                          Admin
+                        </button>
+                        <button 
+                          onClick={() => setActiveRoleMode("cầu thủ")}
+                          className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-md transition-all ${
+                            activeRoleMode === "cầu thủ"
+                              ? "bg-gradient-to-r from-neon-green to-emerald-500 text-appDark-deep shadow-md"
+                              : "text-slate-500 hover:text-slate-300"
+                          }`}
+                        >
+                          Cầu Thủ
                         </button>
                       </div>
-                    )}
-
-                    {/* STATS OVERVIEW */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-appDark-card border border-appDark-border rounded-xl p-3 text-center shadow-md">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Ghép Thành Công</span>
-                        <span className="text-xl font-black text-neon-green">
-                          {matches.filter(m => m.status === 'Đã chốt kèo' || m.status === 'confirmed' || m.status === 'Đã đủ người').length} trận
-                        </span>
-                      </div>
-                      <div className="bg-appDark-card border border-appDark-border rounded-xl p-3 text-center shadow-md">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Hủy / Ghép Thất Bại</span>
-                        <span className="text-xl font-black text-red-400">
-                          {matches.filter(m => m.status === 'Đã hủy').length} trận
-                        </span>
-                      </div>
-                      <div className="bg-appDark-card border border-appDark-border rounded-xl p-3 text-center shadow-md">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Đang Chờ Đối</span>
-                        <span className="text-xl font-black text-neon-yellow">
-                          {matches.filter(m => m.status === 'Cần đối').length} kèo
-                        </span>
-                      </div>
-                      <div className="bg-appDark-card border border-appDark-border rounded-xl p-3 text-center shadow-md">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Sân Trống Sẵn Có</span>
-                        <span className="text-xl font-black text-cyan-400">
-                          {slots.length} sân
-                        </span>
-                      </div>
                     </div>
 
-                    {/* TAB SELECTOR INSIDE ADMIN PANEL */}
-                    <div className="flex bg-appDark-deep p-1 rounded-xl border border-appDark-border gap-1">
-                      <button
-                        onClick={() => setAdminSubTab("history")}
-                        className={`flex-1 text-center py-2 text-[11px] font-bold rounded-lg transition-all ${
-                          adminSubTab === "history" 
-                            ? "bg-gradient-to-r from-neon-green to-emerald-500 text-appDark-deep shadow" 
-                            : "text-slate-400 hover:text-slate-200"
-                        }`}
-                      >
-                        📜 Lịch Sử
-                      </button>
-                      <button
-                        onClick={() => setAdminSubTab("manage")}
-                        className={`flex-1 text-center py-2 text-[11px] font-bold rounded-lg transition-all ${
-                          adminSubTab === "manage" 
-                            ? "bg-gradient-to-r from-neon-green to-emerald-500 text-appDark-deep shadow" 
-                            : "text-slate-400 hover:text-slate-200"
-                        }`}
-                      >
-                        🛠️ Quản Lý Kèo
-                      </button>
-                      <button
-                        onClick={() => setAdminSubTab("pitch_owners")}
-                        className={`flex-1 text-center py-2 text-[11px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                          adminSubTab === "pitch_owners" 
-                            ? "bg-gradient-to-r from-neon-green to-emerald-500 text-appDark-deep shadow" 
-                            : "text-slate-400 hover:text-slate-200"
-                        }`}
-                      >
-                        <span>🔑 Chủ Sân</span>
-                        {venues.filter(v => v.verification_status === "pending_verification").length > 0 ? (
-                          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse inline-block shrink-0 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></span>
-                        ) : (
-                          <span className="text-[10px] text-slate-500 font-extrabold">({pitchOwners.length})</span>
-                        )}
-                      </button>
-                    </div>
+                    {/* TAB 1: TỔNG QUAN */}
+                    {(currentTab === "admin_tong_quan" || currentTab === "admin" || !["admin_ql_keo", "admin_ql_user", "admin_ql_san"].includes(currentTab)) && (() => {
+                      // Logic calculation
+                      const now = new Date();
+                      const todayStr = now.toISOString().split('T')[0];
+                      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                      const lastMonthStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+                      const lastMonthEnd = thirtyDaysAgo;
 
-                    {/* SUB TAB 1: HISTORY OF PAIRED AND CANCELLED MATCHES */}
-                    {adminSubTab === "history" && (
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-300">
-                            Lịch sử ghép kèo chi tiết
-                          </h4>
-                          <span className="text-[10px] bg-appDark-cardLight border border-appDark-border px-2 py-0.5 rounded text-slate-400 font-semibold">
-                            Realtime
-                          </span>
-                        </div>
+                      // Hàng 1: Trận hôm nay, tuần này, tháng này, tăng trưởng
+                      const matchesToday = matches.filter(m => m.date === todayStr).length;
+                      const matchesThisWeek = matches.filter(m => new Date(m.date || m.createdAt || m.created_at || now) >= sevenDaysAgo).length;
+                      const matchesThisMonth = matches.filter(m => new Date(m.date || m.createdAt || m.created_at || now) >= thirtyDaysAgo).length;
+                      const matchesLastMonth = matches.filter(m => {
+                        const d = new Date(m.date || m.createdAt || m.created_at || now);
+                        return d >= lastMonthStart && d < lastMonthEnd;
+                      }).length;
+                      const growth = matchesLastMonth > 0 ? Math.round(((matchesThisMonth - matchesLastMonth) / matchesLastMonth) * 100) : (matchesThisMonth > 0 ? 100 : 0);
 
-                        {matches.filter(m => m.status === 'Đã chốt kèo' || m.status === 'confirmed' || m.status === 'Đã đủ người' || m.status === 'Đã hủy').length === 0 ? (
-                          <div className="bg-appDark-card border border-appDark-border rounded-xl p-8 text-center text-xs text-slate-400">
-                            Chưa có lịch sử ghép kèo thành công hay hủy trận nào.
-                          </div>
-                        ) : (
-                          <div className="space-y-3">
-                            {matches
-                              .filter(m => m.status === 'Đã chốt kèo' || m.status === 'confirmed' || m.status === 'Đã đủ người' || m.status === 'Đã hủy')
-                              .map(m => {
-                                const isSuccess = m.status === 'Đã chốt kèo' || m.status === 'confirmed' || m.status === 'Đã đủ người';
-                                return (
-                                  <div 
-                                    key={m.id}
-                                    className={`bg-appDark-card border-y border-r border-l-4 rounded-xl p-4 space-y-2 shadow relative overflow-hidden ${
-                                      isSuccess 
-                                        ? 'border-emerald-500/20 border-l-emerald-500' 
-                                        : 'border-red-500/20 border-l-red-500'
-                                    }`}
-                                  >
-                                    <div className="flex justify-between items-start">
-                                      <div className="space-y-0.5">
-                                        <h5 className="font-extrabold text-xs text-white">
-                                          {isSuccess ? (
-                                            <span className="flex items-center gap-1.5 flex-wrap">
-                                              <span>{m.teamName}</span>
-                                              <span className="text-neon-green font-bold text-[10px]">⚔️ VS ⚔️</span>
-                                              <span className="text-neon-yellow">{m.pairedWith || "Đối Tác Ghép"}</span>
-                                            </span>
-                                          ) : (
-                                            <span className="text-slate-200">{m.teamName}</span>
-                                          )}
-                                        </h5>
-                                        <p className="text-[10px] text-slate-400 font-medium">
-                                          🏟️ {m.venue} ({m.district}) | {m.pitchType}
-                                        </p>
-                                        <p className="text-[10px] text-neon-green font-semibold">
-                                          ⏰ Thời gian: {m.time}
-                                        </p>
-                                      </div>
-                                      
-                                      <span className={`text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded tracking-wide ${
-                                        isSuccess 
-                                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                                          : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                                      }`}>
-                                        {isSuccess ? 'Thành công' : 'Đã hủy'}
-                                      </span>
-                                    </div>
+                      // Hàng 2: Sân active, Đội active, Kèo đang mở, Khu vực hot
+                      const activeVenues = venues ? venues.filter(v => v.verification_status === 'verified' || v.status === 'active' || true).length : 0; // all venues consider active for now if missing props
+                      const activeTeams = teams ? teams.filter(t => t.matchCount > 0 || (t.members && t.members.length > 0) || true).length : 0; // count all teams
+                      const openMatches = matches.filter(m => m.status === 'Cần đối' || m.status === 'Thiếu người').length;
+                      
+                      // Tính toán dữ liệu khu vực cho giống thực tế
+                      const districtStats = {};
+                      matches.forEach(m => {
+                        if (!m.district) return;
+                        const d = new Date(m.date || m.createdAt || m.created_at || now);
+                        if (!districtStats[m.district]) districtStats[m.district] = { total: 0, thisMonth: 0, lastMonth: 0 };
+                        districtStats[m.district].total++;
+                        if (d >= thirtyDaysAgo) districtStats[m.district].thisMonth++;
+                        else if (d >= lastMonthStart && d < lastMonthEnd) districtStats[m.district].lastMonth++;
+                      });
+                      const topDistrictsData = Object.entries(districtStats)
+                        .sort((a, b) => b[1].total - a[1].total)
+                        .slice(0, 5)
+                        .map(([name, stats]) => {
+                          const distGrowth = stats.lastMonth > 0 ? Math.round(((stats.thisMonth - stats.lastMonth) / stats.lastMonth) * 100) : (stats.thisMonth > 0 ? 100 : 0);
+                          return { name, count: stats.total, growth: distGrowth };
+                        });
+                      if (topDistrictsData.length === 0) topDistrictsData.push({ name: "Chưa có dữ liệu", count: 0, growth: 0 });
+                      const topDistrictName = topDistrictsData[0].name;
 
-                                    {m.status === 'Đã hủy' && (
-                                      <div className="bg-red-950/20 border border-red-500/20 rounded-lg p-2.5 mt-1">
-                                        <p className="text-[10px] text-red-300 leading-relaxed">
-                                          ⚠️ <span className="font-bold">Lý do hủy:</span> {m.cancelReason || "Hủy ghép không thành công."}
-                                        </p>
-                                      </div>
-                                    )}
+                      // Hàng 3: Fill Rate, Tỷ lệ chốt, Tỷ lệ huỷ, Hoa hồng dự kiến
+                      const totalSlots = (typeof slots !== 'undefined' && slots.length > 0) ? slots.length : 0;
+                      const bookedSlots = (typeof slots !== 'undefined') ? slots.filter(s => s.status === 'booked').length : 0;
+                      const fillRate = totalSlots > 0 ? Math.round((bookedSlots / totalSlots) * 100) : 0;
 
-                                    {isSuccess && (
-                                      <div className="bg-emerald-950/20 border border-emerald-500/20 rounded-lg px-2 py-1 mt-1 text-[9.5px] text-emerald-300 flex items-center justify-between">
-                                        <span>📞 Liên hệ Admin: {m.adminContact}</span>
-                                        <span className="font-bold text-neon-green">Ghép thành công ✓</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      const totalMatches = (matches && matches.length > 0) ? matches.length : 0;
+                      const confirmedMatchesCount = matches ? matches.filter(m => m.status === 'Đã chốt kèo' || m.status === 'confirmed' || m.status === 'Đã đủ người' || m.status === 'Hoàn thành' || m.status === 'completed').length : 0;
+                      const cancelledMatchesCount = matches ? matches.filter(m => m.status === 'Đã hủy' || m.status === 'cancelled').length : 0;
+                      const matchConfirmRate = totalMatches > 0 ? Math.round((confirmedMatchesCount / totalMatches) * 100) : 0;
+                      const matchCancelRate = totalMatches > 0 ? Math.round((cancelledMatchesCount / totalMatches) * 100) : 0;
+                      
+                      // Hoa hồng dự kiến (50k/trận chốt)
+                      const estCommissionVal = confirmedMatchesCount * 50000;
+                      const estCommission = estCommissionVal.toLocaleString('vi-VN') + "đ";
 
-                    {/* SUB TAB 2: DATA MANAGE SYSTEM */}
-                    {adminSubTab === "manage" && (
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-300">
-                            Quản lý toàn bộ danh sách kèo
-                          </h4>
-                          <span className="text-[10px] bg-neon-green/10 border border-neon-green/20 px-2 py-0.5 rounded text-neon-green font-bold">
-                            Tổng: {matches.length} kèo
-                          </span>
-                        </div>
+                      // Trạng thái hệ thống (Nhỏ gọn 1 dòng)
+                      let systemStatusIcon = "🟢";
+                      let systemStatusText = "Hệ thống đang khỏe";
+                      let systemStatusColor = "text-neon-green";
+                      
+                      if (growth < 0 && matchCancelRate > 30) {
+                        systemStatusIcon = "🔴";
+                        systemStatusText = "Tăng trưởng giảm";
+                        systemStatusColor = "text-red-400";
+                      } else if (growth <= 0 || matchCancelRate > 15 || fillRate < 30) {
+                        systemStatusIcon = "🟡";
+                        systemStatusText = "Cần chú ý";
+                        systemStatusColor = "text-neon-yellow";
+                      }
 
-                        <div className="space-y-3">
-                          {matches.map(m => (
-                            <div key={m.id} className="bg-appDark-card border border-appDark-border rounded-xl p-3.5 space-y-2.5 shadow-sm">
-                              <div className="flex justify-between items-start gap-2">
-                                <div>
-                                  <h5 className="font-bold text-xs text-white flex items-center gap-1.5">
-                                    {m.teamName} 
-                                    <span className="text-[10px] font-normal text-slate-400">({m.pitchType})</span>
-                                  </h5>
-                                  <p className="text-[10px] text-slate-400 mt-0.5">{m.venue} | {m.time}</p>
-                                </div>
-                                
-                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
-                                  m.status === 'Cần đối' || m.status === 'waiting_opponent' ? 'bg-neon-green/10 text-neon-green border-neon-green/20' :
-                                  m.status === 'Thiếu người' ? 'bg-neon-yellow/10 text-neon-yellow border-neon-yellow/20' :
-                                  m.status === 'Đã chốt kèo' || m.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                  m.status === 'Đã hủy' || m.status === 'cancelled' || m.status === 'expired' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                                  'bg-purple-500/10 text-purple-400 border-purple-500/20'
-                                }`}>
-                                  {m.status === 'waiting_opponent' ? 'Đang chờ đối' : 
-                                   m.status === 'pending_confirmation' ? 'Có đối đăng ký' : 
-                                   m.status === 'confirmed' ? 'Kèo đã chốt' :
-                                   m.status === 'cancelled' ? 'Đã hủy' :
-                                   m.status === 'expired' ? 'Hết hạn' : m.status}
-                                </span>
+                      // Tính toán việc cần xử lý
+                      const pendingVenuesCount = venues ? venues.filter(v => v.verification_status === 'pending' || v.status === 'pending').length : 0;
+                      const reportsCount = (users ? users.reduce((acc, u) => acc + (u.reportCount || 0), 0) : 0) + (matches ? matches.filter(m => m.hasComplaint).length : 0);
+                      const pendingMatches24hCount = matches ? matches.filter(m => {
+                        if (m.status !== 'Cần đối' && m.status !== 'Thiếu người') return false;
+                        const matchDateStr = m.created_at || m.createdAt || m.date;
+                        if (!matchDateStr) return false;
+                        const mDate = new Date(matchDateStr);
+                        return (now.getTime() - mDate.getTime()) > 24 * 60 * 60 * 1000;
+                      }).length : 0;
+                      const expiringSlotsCount = slots ? slots.filter(s => s.status !== 'booked' && (s.date === todayStr)).length : 0;
+
+                      return (
+                        <div className="space-y-4 animate-fade-in pb-10 mt-2">
+                          
+                          {/* VIỆC CẦN XỬ LÝ */}
+                          <div className="bg-[#1c1515] border border-[#4a2525] rounded-xl p-4 shadow-md mb-2">
+                            <div className="flex items-center gap-2 mb-4">
+                              <span className="text-xl drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]">🚨</span>
+                              <h4 className="text-[13px] font-black uppercase tracking-widest text-[#ff6b6b]">VIỆC CẦN XỬ LÝ</h4>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                              <div className="bg-[#171b26] border border-[#2a2f42] rounded-xl p-4 flex flex-col justify-center transition-all hover:border-[#4a5f9c] cursor-pointer">
+                                <span className="text-[12px] text-slate-400 font-medium mb-2">Chờ duyệt sân</span>
+                                <span className="text-lg font-black text-white">{pendingVenuesCount} yêu cầu</span>
                               </div>
-
-                              <div className="flex items-center gap-1.5 flex-wrap pt-1.5 border-t border-appDark-border/30">
-                                <button
-                                  onClick={() => handleUpdateMatchStatus(m.id, 'Cần đối')}
-                                  className="text-[9px] font-bold bg-appDark-deep hover:bg-neon-green/20 text-slate-300 hover:text-neon-green border border-appDark-border hover:border-neon-green/30 px-2 py-1 rounded transition-all"
-                                >
-                                  Cần đối
-                                </button>
-                                <button
-                                  onClick={() => handleUpdateMatchStatus(m.id, 'Thiếu người')}
-                                  className="text-[9px] font-bold bg-appDark-deep hover:bg-neon-yellow/20 text-slate-300 hover:text-neon-yellow border border-appDark-border hover:border-neon-yellow/30 px-2 py-1 rounded transition-all"
-                                >
-                                  Thiếu người
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    const opponent = prompt("Nhập tên Đội Đối Tác ghép kèo thành công:", m.pairedWith || "");
-                                    if (opponent !== null) {
-                                      handleUpdateMatchStatus(m.id, 'Đã chốt kèo', { pairedWith: opponent || "FC Đối Tác" });
-                                    }
-                                  }}
-                                  className="text-[9px] font-bold bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/30 px-2 py-1 rounded transition-all"
-                                >
-                                  Chốt đối thành công ✓
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    const reason = prompt("Nhập lý do hủy kèo đấu này:", m.cancelReason || "");
-                                    if (reason !== null) {
-                                      handleUpdateMatchStatus(m.id, 'Đã hủy', { cancelReason: reason || "Ghép không thành công" });
-                                    }
-                                  }}
-                                  className="text-[9px] font-bold bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/30 px-2 py-1 rounded transition-all"
-                                >
-                                  Hủy kèo ✗
-                                </button>
+                              <div className="bg-[#171b26] border border-[#2a2f42] rounded-xl p-4 flex flex-col justify-center transition-all hover:border-[#4a5f9c] cursor-pointer">
+                                <span className="text-[12px] text-slate-400 font-medium mb-2">Báo cáo vi phạm</span>
+                                <span className="text-lg font-black text-white">{reportsCount} báo cáo</span>
+                              </div>
+                              <div className="bg-[#171b26] border border-[#2a2f42] rounded-xl p-4 flex flex-col justify-center transition-all hover:border-[#4a5f9c] cursor-pointer">
+                                <span className="text-[12px] text-slate-400 font-medium mb-2">Kèo chờ đối &gt; 24h</span>
+                                <span className="text-lg font-black text-white">{pendingMatches24hCount} kèo</span>
+                              </div>
+                              <div className="bg-[#171b26] border border-[#2a2f42] rounded-xl p-4 flex flex-col justify-center transition-all hover:border-[#4a5f9c] cursor-pointer">
+                                <span className="text-[12px] text-slate-400 font-medium mb-2">Slot trống hôm nay</span>
+                                <span className="text-lg font-black text-white">{expiringSlotsCount} slot</span>
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* SUB TAB 3: PITCH OWNER PERMISSION MANAGEMENT */}
-                    {adminSubTab === "pitch_owners" && (
-                      <div className="space-y-4 text-left">
-                        <div className="flex justify-between items-center">
-                          <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-300">
-                            Danh sách Chủ Sân được duyệt
-                          </h4>
-                          <span className="text-[10px] bg-neon-green/10 border border-neon-green/20 px-2 py-0.5 rounded text-neon-green font-bold">
-                            {pitchOwners.length} tài khoản
-                          </span>
-                        </div>
-
-                        {/* Fast Add Owner Form */}
-                        <form 
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            const newOwnerPhone = e.target.elements.newOwnerPhone.value.trim();
-                            if (!newOwnerPhone) return;
-                            if (pitchOwners.includes(newOwnerPhone)) {
-                              alert("Số điện thoại này đã được phê duyệt làm Chủ Sân trước đó!");
-                              return;
-                            }
-                            setPitchOwners(prev => [...prev, newOwnerPhone]);
-                            e.target.reset();
-                            alert(`🔑 Đã phê duyệt số điện thoại ${newOwnerPhone} làm CHỦ SÂN thành công!`);
-                          }}
-                          className="bg-appDark-deep p-3 rounded-xl border border-appDark-border space-y-2 shadow-sm"
-                        >
-                          <label className="text-[10px] font-bold text-slate-400 block uppercase">
-                            ⚡ Phê duyệt nhanh Chủ Sân mới
-                          </label>
-                          <div className="flex gap-2">
-                            <input 
-                              type="tel"
-                              name="newOwnerPhone"
-                              placeholder="Nhập số điện thoại chủ sân..."
-                              required
-                              className="flex-1 text-xs bg-appDark-card border border-appDark-border rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-neon-green"
-                            />
-                            <button
-                              type="submit"
-                              className="text-xs font-black bg-gradient-to-r from-neon-green to-emerald-500 text-appDark-deep px-3.5 py-2 rounded-lg hover:scale-105 active:scale-95 transition-all shadow-md shrink-0"
-                            >
-                              Duyệt
-                            </button>
                           </div>
-                        </form>
 
-                        {/* List of current pitch owners */}
-                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1 no-scrollbar">
-                          {pitchOwners.length === 0 ? (
-                            <p className="text-[10px] text-slate-500 italic text-center py-4 bg-appDark-deep rounded-xl border border-appDark-border/30">
-                              Chưa phê duyệt chủ sân nào.
-                            </p>
-                          ) : (
-                            pitchOwners.map((ownerPhone) => (
-                              <div key={ownerPhone} className="flex justify-between items-center text-xs bg-appDark-card border border-appDark-border p-2.5 rounded-xl">
-                                <div className="space-y-0.5 font-sans">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="font-extrabold text-white">🏟️ SĐT: {ownerPhone}</span>
-                                    <span className="text-[9px] bg-neon-green/20 text-neon-green border border-neon-green/30 px-1.5 py-0.5 rounded font-black uppercase">
-                                      CHỦ SÂN
-                                    </span>
-                                  </div>
-                                  <p className="text-[9px] text-slate-500">Quyền đăng lịch, giờ, thanh lý sân trống ✓</p>
-                                </div>
-                                
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (confirm(`Bạn có chắc chắn muốn THU HỒI quyền Chủ Sân của số điện thoại ${ownerPhone}?`)) {
-                                      setPitchOwners(prev => prev.filter(p => p !== ownerPhone));
-                                      alert(`❌ Đã thu hồi quyền Chủ Sân của ${ownerPhone}.`);
-                                    }
-                                  }}
-                                  className="text-[9px] font-bold bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/30 px-2 py-1 rounded transition-all animate-pulse"
-                                >
-                                  Thu Hồi
-                                </button>
-                              </div>
-                            ))
-                          )}
-                        </div>
+                          {/* ROW 1: MATCHES KPI (Green & White) */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div className="bg-appDark-deep border border-appDark-border rounded-xl p-4 shadow-md">
+                              <span className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">⚽ Trận Hôm Nay</span>
+                              <span className="text-2xl md:text-3xl font-black text-white">{matchesToday}</span>
+                            </div>
+                            <div className="bg-appDark-deep border border-appDark-border rounded-xl p-4 shadow-md">
+                              <span className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">⚽ Trận Tuần Này</span>
+                              <span className="text-2xl md:text-3xl font-black text-white">{matchesThisWeek}</span>
+                            </div>
+                            <div className="bg-appDark-deep border border-appDark-border rounded-xl p-4 shadow-md">
+                              <span className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">⚽ Trận Tháng Này</span>
+                              <span className="text-2xl md:text-3xl font-black text-white">{matchesThisMonth}</span>
+                            </div>
+                            <div className="bg-appDark-deep border border-neon-green/30 rounded-xl p-4 shadow-md bg-gradient-to-br from-appDark-deep to-emerald-900/20">
+                              <span className="text-[10px] md:text-xs font-bold text-neon-green uppercase tracking-wider block mb-1">📈 Tăng Trưởng</span>
+                              <span className="text-2xl md:text-3xl font-black text-neon-green leading-none">
+                                {growth >= 0 ? '+' : ''}{growth}%
+                              </span>
+                              <span className="text-[9px] font-medium text-neon-green/70 block mt-1">so với tháng trước</span>
+                            </div>
+                          </div>
 
-                        {/* Pending venues section */}
-                        <div className="space-y-3.5 mt-4 pt-4 border-t border-appDark-border/40">
-                          <h5 className="text-[10px] font-black text-neon-yellow uppercase tracking-wider">
-                            🏟️ Yêu Cầu Duyệt Chủ Sân & Venue Mới ({venues.filter(v => v.verification_status === "pending_verification").length})
-                          </h5>
-                          {venues.filter(v => v.verification_status === "pending_verification").length === 0 ? (
-                            <p className="text-[10px] text-slate-500 italic text-center py-4 bg-appDark-deep rounded-xl border border-appDark-border/30">
-                              Không có yêu cầu duyệt sân nào đang chờ.
-                            </p>
-                          ) : (
-                            venues.filter(v => v.verification_status === "pending_verification").map((v) => {
-                              const ownerUser = users.find(u => u.id === v.owner_user_id) || { name: "Người dùng ẩn", phone: v.phone };
-                              return (
-                                <div key={v.id} className="bg-appDark-card border border-appDark-border/60 rounded-xl p-3.5 space-y-2 text-xs">
-                                  <div className="flex justify-between items-start">
-                                    <div className="space-y-0.5">
-                                      <h6 className="font-extrabold text-white">{v.name} ({v.district})</h6>
-                                      <p className="text-[10px] text-slate-400">Chủ sân: <strong className="text-slate-300">{ownerUser.name}</strong> - SĐT: <strong className="text-neon-green">{v.phone || ownerUser.phone}</strong></p>
-                                      <p className="text-[10px] text-slate-400">Địa chỉ: {v.address}</p>
-                                      {v.notes && <p className="text-[10px] text-slate-500 italic">"{v.notes}"</p>}
+                          {/* ROW 2: ENTITIES KPI */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div className="bg-appDark-deep border border-blue-500/30 rounded-xl p-3.5 shadow-sm">
+                              <span className="text-[9px] md:text-[10px] font-bold text-blue-400 uppercase tracking-wider block">🏟️ Sân Active</span>
+                              <span className="text-lg md:text-xl font-black text-white mt-1.5 block">{activeVenues}</span>
+                            </div>
+                            <div className="bg-appDark-deep border border-blue-500/30 rounded-xl p-3.5 shadow-sm">
+                              <span className="text-[9px] md:text-[10px] font-bold text-blue-400 uppercase tracking-wider block">👥 Đội Active</span>
+                              <span className="text-lg md:text-xl font-black text-white mt-1.5 block">{activeTeams}</span>
+                            </div>
+                            <div className="bg-appDark-deep border border-neon-yellow/30 rounded-xl p-3.5 shadow-[0_0_10px_rgba(253,224,71,0.1)]">
+                              <span className="text-[9px] md:text-[10px] font-bold text-neon-yellow uppercase tracking-wider block">🟡 Kèo Đang Mở</span>
+                              <span className="text-lg md:text-xl font-black text-neon-yellow mt-1.5 block">{openMatches}</span>
+                            </div>
+                            <div className="bg-appDark-deep border border-appDark-border rounded-xl p-3.5 shadow-sm">
+                              <span className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-wider block">📍 Khu Vực Hot</span>
+                              <span className="text-xs md:text-sm font-black text-white mt-1.5 block leading-tight whitespace-normal break-words" title={topDistrictName}>{topDistrictName}</span>
+                            </div>
+                          </div>
+
+                          {/* ROW 3: RATES KPI */}
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <div className="bg-appDark-deep border border-neon-green/30 rounded-xl p-3.5 shadow-sm overflow-hidden">
+                              <span className="text-[9px] md:text-[10px] font-bold text-neon-green uppercase tracking-wider block">🤝 Tỷ Lệ Chốt</span>
+                              <span className="text-lg md:text-xl font-black text-white mt-1.5 block">{matchConfirmRate}%</span>
+                            </div>
+                            <div className="bg-appDark-deep border border-red-500/30 rounded-xl p-3.5 shadow-[0_0_10px_rgba(239,68,68,0.1)] overflow-hidden">
+                              <span className="text-[9px] md:text-[10px] font-bold text-red-400 uppercase tracking-wider block">❌ Tỷ Lệ Hủy</span>
+                              <span className="text-lg md:text-xl font-black text-red-400 mt-1.5 block">{matchCancelRate}%</span>
+                            </div>
+                            <div className="bg-appDark-deep border border-amber-500/30 rounded-xl p-3.5 shadow-[0_0_10px_rgba(245,158,11,0.1)] overflow-hidden">
+                              <span className="text-[9px] md:text-[10px] font-bold text-amber-500 uppercase tracking-wider block">💰 Hoa Hồng</span>
+                              <span className="text-base md:text-lg font-black text-amber-500 mt-1.5 block truncate" title={estCommission}>{estCommission}</span>
+                            </div>
+                          </div>
+
+                          {/* CHARTS / DATA VISUALIZATION */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                            
+                            {/* CHART 1: TOP KHU VỰC */}
+                            <div className="bg-appDark-card border border-appDark-border rounded-xl p-5 shadow-md">
+                              <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-300 mb-5 flex items-center gap-2">
+                                <span>🏆</span> Top Khu Vực Active
+                              </h4>
+                              <div className="space-y-4">
+                                {topDistrictsData.map((d, idx) => {
+                                  const maxVal = topDistrictsData[0].count;
+                                  const percent = Math.round((d.count / maxVal) * 100);
+                                  return (
+                                    <div key={d.name} className="space-y-1.5">
+                                      <div className="flex justify-between items-end text-[10px]">
+                                        <div className="font-bold text-white text-xs">#{idx+1} {d.name}</div>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-slate-300 font-bold">{d.count} trận</span>
+                                          <span className={`text-[9px] font-black ${d.growth >= 0 ? 'text-neon-green' : 'text-red-400'}`}>
+                                            ({d.growth >= 0 ? '+' : ''}{d.growth}%)
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className="h-2 w-full bg-appDark-deep rounded-full overflow-hidden border border-appDark-border/50">
+                                        <div 
+                                          className={`h-full rounded-full ${idx === 0 ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'bg-neon-green'}`} 
+                                          style={{ width: `${percent}%` }}
+                                        ></div>
+                                      </div>
                                     </div>
-                                    <span className="text-[8px] bg-neon-yellow/10 text-neon-yellow border border-neon-yellow/20 px-2 py-0.5 rounded font-black uppercase shrink-0">
-                                      CHỜ DUYỆT
-                                    </span>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* CHART 2: SỐ TRẬN HOÀN THÀNH 7 NGÀY (BAR CHART WITH NUMBERS) */}
+                            <div className="bg-appDark-card border border-appDark-border rounded-xl p-5 shadow-md flex flex-col">
+                              <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-300 mb-2 flex items-center gap-2">
+                                <span>📊</span> Trận Hoàn Thành 7 Ngày
+                              </h4>
+                              <div className="flex-1 flex items-end justify-between gap-2 pt-6 pb-2">
+                                {(() => {
+                                  const dailyCounts = [];
+                                  for (let i = 6; i >= 0; i--) {
+                                    const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+                                    const dateStr = d.toISOString().split('T')[0];
+                                    const count = matches.filter(m => (m.status === 'Hoàn thành' || m.status === 'completed') && (m.date === dateStr || (m.created_at && m.created_at.startsWith(dateStr)))).length;
+                                    dailyCounts.push({ offset: i, val: count });
+                                  }
+                                  const maxVal = Math.max(...dailyCounts.map(d => d.val), 10);
+                                  return dailyCounts;
+                                })().map((item, idx) => {
+                                  const date = new Date(now.getTime() - item.offset * 24 * 60 * 60 * 1000);
+                                  const shortDate = `${date.getDate()}/${date.getMonth()+1}`;
+                                  
+                                  const maxVal = Math.max(10, ...[...Array(7)].map((_, i) => matches.filter(m => { const d=new Date(now.getTime()-i*24*60*60*1000).toISOString().split('T')[0]; return (m.status==='Hoàn thành'||m.status==='completed') && m.date===d; }).length));
+                                  const displayHeight = Math.max(15, (item.val / maxVal) * 130); // max height ~130px
+                                  
+                                  return (
+                                    <div key={item.offset} className="flex flex-col items-center gap-1.5 group w-full relative">
+                                      {/* Tooltip on hover */}
+                                      <div className="absolute -top-9 bg-slate-800 border border-slate-700 text-white text-[9px] py-1.5 px-2.5 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10 whitespace-nowrap shadow-xl">
+                                        {shortDate}: {item.val} trận
+                                      </div>
+                                      
+                                      <span className="text-[11px] font-bold text-white mb-0.5">
+                                        {item.val}
+                                      </span>
+                                      <div 
+                                        className="w-full max-w-[32px] bg-emerald-500/30 group-hover:bg-emerald-500 border border-emerald-500/50 rounded-t-sm transition-all shadow-[0_0_10px_rgba(16,185,129,0.1)]" 
+                                        style={{ height: `${displayHeight}px` }}
+                                      ></div>
+                                      <span className="text-[9px] font-medium text-slate-500 mt-1">{shortDate}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* TAB 2: QUẢN LÝ KÈO */}{/* TAB 2: QUẢN LÝ KÈO */}{/* TAB 2: QUẢN LÝ KÈO */}
+                    {currentTab === "admin_ql_keo" && (() => {
+                      // Tính toán KPI
+                      const openMatches = matches.filter(m => m.status === 'Cần đối' || m.status === 'Thiếu người').length;
+                      const pendingMatches = matches.filter(m => m.status === 'Chờ xác nhận').length;
+                      const confirmedMatches = matches.filter(m => m.status === 'Đã chốt kèo' || m.status === 'confirmed' || m.status === 'Đã đủ người').length;
+                      const cancelledMatches = matches.filter(m => m.status === 'Đã hủy' || m.status === 'cancelled').length;
+                      const completedMatches = matches.filter(m => m.status === 'Hoàn thành' || m.status === 'completed').length;
+
+                      // Kèo có vấn đề
+                      const problemMatches = matches.filter(m => {
+                        // Kèo quá lâu chưa có đối (giả lập > 3 ngày)
+                        const isOld = m.date && (new Date() - new Date(m.date)) > 3 * 24 * 60 * 60 * 1000;
+                        return (m.status === 'Cần đối' && isOld) || m.status === 'Đã hủy' || m.hasComplaint;
+                      });
+
+                      return (
+                        <div className="space-y-4 animate-fade-in text-left pb-10">
+                          {/* KPI Đầu Tab */}
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                            <div className="bg-appDark-deep border border-neon-yellow/30 rounded-xl p-2.5 text-center shadow-[0_0_10px_rgba(253,224,71,0.1)]">
+                              <span className="text-[9px] font-bold text-neon-yellow uppercase tracking-wider block">Kèo Đang Mở</span>
+                              <span className="text-sm font-black text-neon-yellow">{openMatches}</span>
+                            </div>
+                            <div className="bg-appDark-deep border border-blue-500/30 rounded-xl p-2.5 text-center shadow-[0_0_10px_rgba(59,130,246,0.1)]">
+                              <span className="text-[9px] font-bold text-blue-400 uppercase tracking-wider block">Chờ Xác Nhận</span>
+                              <span className="text-sm font-black text-blue-400">{pendingMatches}</span>
+                            </div>
+                            <div className="bg-appDark-deep border border-neon-green/30 rounded-xl p-2.5 text-center shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                              <span className="text-[9px] font-bold text-neon-green uppercase tracking-wider block">Đã Chốt</span>
+                              <span className="text-sm font-black text-neon-green">{confirmedMatches}</span>
+                            </div>
+                            <div className="bg-appDark-deep border border-slate-500/30 rounded-xl p-2.5 text-center shadow-md">
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Hoàn Thành</span>
+                              <span className="text-sm font-black text-white">{completedMatches}</span>
+                            </div>
+                            <div className="bg-appDark-deep border border-red-500/30 rounded-xl p-2.5 text-center shadow-[0_0_10px_rgba(239,68,68,0.1)] col-span-2 md:col-span-1">
+                              <span className="text-[9px] font-bold text-red-400 uppercase tracking-wider block">Đã Hủy</span>
+                              <span className="text-sm font-black text-red-400">{cancelledMatches}</span>
+                            </div>
+                          </div>
+
+                          {/* Cảnh báo Kèo Có Vấn Đề */}
+                          {problemMatches.length > 0 && (
+                            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 animate-pulse">
+                              <h5 className="text-xs font-bold text-red-400 mb-1 flex items-center gap-1.5">
+                                <span>⚠️</span> Cần Chú Ý ({problemMatches.length} kèo có vấn đề)
+                              </h5>
+                              <p className="text-[10px] text-slate-400">Có các kèo quá lâu chưa có đối, bị hủy nhiều, hoặc có report khiếu nại.</p>
+                            </div>
+                          )}
+
+                          {/* Filters & Search */}
+                          <div className="bg-appDark-deep p-3 rounded-xl border border-appDark-border space-y-2 shadow-md">
+                            <div className="flex items-center bg-appDark-card border border-appDark-border rounded-lg px-3 py-2 focus-within:border-neon-green transition-all">
+                              <span className="text-slate-400 mr-2">🔍</span>
+                              <input 
+                                type="text" 
+                                id="adminMatchSearchInput"
+                                placeholder="Tìm theo Mã kèo, Tên đội, SĐT..." 
+                                className="w-full bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none"
+                                onInput={(e) => {
+                                  const term = e.target.value.toLowerCase();
+                                  document.querySelectorAll('.admin-match-card2').forEach(card => {
+                                    card.style.display = card.getAttribute('data-search').toLowerCase().includes(term) ? 'block' : 'none';
+                                  });
+                                }}
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                              <select 
+                                className="bg-appDark-card border border-appDark-border rounded-lg px-2 py-1.5 text-[10px] text-slate-300 focus:outline-none"
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  document.querySelectorAll('.admin-match-card2').forEach(card => {
+                                    if(!val) { card.classList.remove('hidden-by-district'); return; }
+                                    if(card.getAttribute('data-district') === val) card.classList.remove('hidden-by-district');
+                                    else card.classList.add('hidden-by-district');
+                                  });
+                                }}
+                              >
+                                <option value="">Tất cả Khu vực</option>
+                                {[...new Set(matches.map(m => m.district).filter(Boolean))].map(d => (
+                                  <option key={d} value={d}>{d}</option>
+                                ))}
+                              </select>
+                              <select 
+                                className="bg-appDark-card border border-appDark-border rounded-lg px-2 py-1.5 text-[10px] text-slate-300 focus:outline-none"
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  document.querySelectorAll('.admin-match-card2').forEach(card => {
+                                    if(!val) { card.classList.remove('hidden-by-status'); return; }
+                                    if(card.getAttribute('data-status') === val) card.classList.remove('hidden-by-status');
+                                    else card.classList.add('hidden-by-status');
+                                  });
+                                }}
+                              >
+                                <option value="">Tất cả Trạng thái</option>
+                                <option value="Cần đối">Cần đối</option>
+                                <option value="Thiếu người">Thiếu người</option>
+                                <option value="Chờ xác nhận">Chờ xác nhận</option>
+                                <option value="Đã chốt kèo">Đã chốt kèo</option>
+                                <option value="Hoàn thành">Hoàn thành</option>
+                                <option value="Đã hủy">Đã hủy</option>
+                              </select>
+                              <input type="date" className="bg-appDark-card border border-appDark-border rounded-lg px-2 py-1.5 text-[10px] text-slate-300 focus:outline-none" />
+                              <select className="bg-appDark-card border border-appDark-border rounded-lg px-2 py-1.5 text-[10px] text-slate-300 focus:outline-none">
+                                <option value="">Loại Sân</option>
+                                <option value="5">Sân 5</option>
+                                <option value="7">Sân 7</option>
+                                <option value="11">Sân 11</option>
+                              </select>
+                            </div>
+                            <style>{`.hidden-by-district, .hidden-by-status { display: none !important; }`}</style>
+                          </div>
+
+                          {/* MATCH LIST (CARDS) */}
+                          <div className="space-y-3 max-h-[65vh] overflow-y-auto no-scrollbar pb-10">
+                            {matches.slice().reverse().map(m => {
+                              const venue = m.venueId ? venues.find(v => v.id === m.venueId) : null;
+                              const searchString = `${m.id} ${m.teamName || ''} ${m.phone || ''} ${m.district || ''} ${m.status || ''} ${venue ? venue.name : ''}`;
+                              
+                              let badgeClass = "text-slate-400 bg-slate-500/10 border-slate-500/30";
+                              let dotColor = "bg-slate-400";
+                              let displayStatus = m.status;
+
+                              if (m.status === "Cần đối" || m.status === "Thiếu người") {
+                                badgeClass = "text-neon-yellow bg-neon-yellow/10 border-neon-yellow/30";
+                                dotColor = "bg-neon-yellow animate-pulse";
+                                displayStatus = "🟡 Đang mở";
+                              } else if (m.status === "Chờ xác nhận") {
+                                badgeClass = "text-blue-400 bg-blue-500/10 border-blue-500/30";
+                                dotColor = "bg-blue-400 animate-pulse";
+                                displayStatus = "🔵 Chờ xác nhận";
+                              } else if (m.status === "Đã chốt kèo" || m.status === "confirmed" || m.status === "Đã đủ người") {
+                                badgeClass = "text-neon-green bg-neon-green/10 border-neon-green/30";
+                                dotColor = "bg-neon-green";
+                                displayStatus = "🟢 Đã chốt";
+                              } else if (m.status === "Hoàn thành" || m.status === "completed") {
+                                badgeClass = "text-white bg-slate-700/50 border-slate-600";
+                                dotColor = "bg-white";
+                                displayStatus = "⚫ Hoàn thành";
+                              } else if (m.status === "Đã hủy" || m.status === "cancelled") {
+                                badgeClass = "text-red-400 bg-red-500/10 border-red-500/30";
+                                dotColor = "bg-red-500";
+                                displayStatus = "🔴 Đã hủy";
+                              }
+
+                              if (m.hasComplaint) {
+                                badgeClass = "text-orange-400 bg-orange-500/10 border-orange-500/30";
+                                dotColor = "bg-orange-500 animate-bounce";
+                                displayStatus = "🟠 Có khiếu nại";
+                              }
+
+                              return (
+                                <div key={m.id} data-search={searchString} data-district={m.district || ''} data-status={m.status} className="admin-match-card2 bg-appDark-card border border-appDark-border rounded-xl p-3.5 shadow-md relative overflow-hidden">
+                                  {m.hasComplaint && <div className="absolute top-0 right-0 w-12 h-12 bg-orange-500/20 blur-xl rounded-full"></div>}
+                                  
+                                  <div className="flex justify-between items-start mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[9px] font-mono text-slate-500 bg-appDark-deep px-1.5 py-0.5 rounded border border-appDark-border">
+                                        #{m.id.substring(0, 6).toUpperCase()}
+                                      </span>
+                                      <span className="text-[10px] text-slate-400 bg-appDark-deep px-1.5 py-0.5 rounded border border-appDark-border">Sân {m.type || 7}</span>
+                                    </div>
+                                    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded border text-[9px] font-black uppercase tracking-wider ${badgeClass}`}>
+                                      <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></span>
+                                      {displayStatus}
+                                    </div>
                                   </div>
 
-                                  <div className="flex gap-2 pt-2 border-t border-appDark-border/20">
-                                    <button
-                                      type="button"
+                                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 mb-3 bg-appDark-deep/50 rounded-lg p-2 border border-appDark-border/30">
+                                    <div className="text-center">
+                                      <span className="block text-xs font-extrabold text-white truncate max-w-[100px] mx-auto">{m.teamName || 'Đội A'}</span>
+                                      <span className="block text-[9px] text-cyan-400 mt-0.5">{m.phone}</span>
+                                    </div>
+                                    <div className="text-center">
+                                      <span className="text-[9px] font-black text-slate-500 italic px-2 bg-appDark-deep rounded-full border border-appDark-border">VS</span>
+                                    </div>
+                                    <div className="text-center">
+                                      <span className={`block text-xs font-extrabold truncate max-w-[100px] mx-auto ${m.opponentName ? 'text-white' : 'text-slate-600'}`}>
+                                        {m.opponentName || '???'}
+                                      </span>
+                                      <span className="block text-[9px] text-slate-500 mt-0.5">{m.opponentPhone || 'Đang chờ'}</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-2 text-[10px] mb-3">
+                                    <div className="flex items-center gap-1.5 text-slate-300">
+                                      <span className="text-slate-500">🕒</span>
+                                      <span className="font-bold">{m.date} | {m.time}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-slate-300">
+                                      <span className="text-slate-500">📍</span>
+                                      <span className="font-bold truncate">{venue ? venue.name : (m.district || 'Chưa rõ')}</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex justify-between items-center pt-2 border-t border-appDark-border/50">
+                                    <div className="text-[9px] text-slate-400 font-medium">
+                                      Yêu cầu: <strong className="text-white">{m.requests?.length || 0}</strong>
+                                    </div>
+                                    <button 
                                       onClick={() => {
-                                        // Approve venue owner
-                                        setVenues(prev => prev.map(x => x.id === v.id ? { ...x, verification_status: "verified" } : x));
-                                        const ownerPhone = v.phone || ownerUser.phone;
-                                        if (ownerPhone && !pitchOwners.includes(ownerPhone)) {
-                                          setPitchOwners(prev => [...prev, ownerPhone]);
-                                        }
-                                        alert(`✅ Đã phê duyệt sân "${v.name}" và cấp quyền CHỦ SÂN cho số ${ownerPhone}!`);
+                                        setModalType('admin_match_detail');
+                                        setModalData({ match: m, venue: venue });
                                       }}
-                                      className="flex-1 font-bold bg-gradient-to-r from-neon-green to-emerald-500 text-appDark-deep py-1.5 rounded-lg text-[10px] uppercase hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                      className="text-[10px] font-black text-neon-green hover:text-emerald-400 bg-neon-green/10 hover:bg-neon-green/20 border border-neon-green/30 px-3 py-1.5 rounded-lg transition-all"
                                     >
-                                      Phê Duyệt ✓
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        if (confirm(`Bạn có chắc chắn muốn TỪ CHỐI yêu cầu của sân "${v.name}"?`)) {
-                                          setVenues(prev => prev.map(x => x.id === v.id ? { ...x, verification_status: "rejected" } : x));
-                                          alert(`❌ Đã từ chối yêu cầu của sân "${v.name}".`);
-                                        }
-                                      }}
-                                      className="font-bold bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white px-3 py-1.5 rounded-lg text-[10px] uppercase border border-red-500/30 transition-all animate-pulse"
-                                    >
-                                      Từ Chối
+                                      Xem Chi Tiết ➜
                                     </button>
                                   </div>
                                 </div>
                               );
-                            })
+                            })}
+                          </div>
+
+                        </div>
+                      );
+                    })()}
+                    
+                    {/* MODAL CHI TIẾT KÈO CHO ADMIN */}
+                    {modalType === 'admin_match_detail' && modalData?.match && (() => {
+                      const m = modalData.match;
+                      const v = modalData.venue;
+                      return (
+                        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4 animate-fade-in">
+                          <div className="bg-appDark-card w-full sm:max-w-md max-h-[90vh] overflow-y-auto no-scrollbar rounded-t-2xl sm:rounded-2xl border border-appDark-border shadow-2xl relative transform transition-transform">
+                            {/* Header */}
+                            <div className="sticky top-0 bg-appDark-card/90 backdrop-blur-md border-b border-appDark-border p-4 flex justify-between items-center z-10">
+                              <div>
+                                <h3 className="font-black text-white text-sm uppercase tracking-wider flex items-center gap-2">
+                                  <span>⚙️</span> Chi Tiết Kèo
+                                  <span className="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded border border-slate-700">#{m.id.substring(0,8)}</span>
+                                </h3>
+                              </div>
+                              <button onClick={() => setModalType(null)} className="w-8 h-8 rounded-full bg-appDark-deep flex items-center justify-center text-slate-400 hover:text-white border border-appDark-border transition-all">
+                                ✕
+                              </button>
+                            </div>
+
+                            <div className="p-4 space-y-5">
+                              {/* Match Info Block */}
+                              <div className="bg-appDark-deep rounded-xl p-3 border border-appDark-border space-y-3">
+                                <div className="flex justify-between items-center pb-2 border-b border-slate-700/50">
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase">Trạng Thái Hiện Tại</span>
+                                  <span className="text-xs font-black text-neon-green uppercase bg-neon-green/10 px-2 py-0.5 rounded border border-neon-green/30">
+                                    {{'confirmed': 'Đã chốt', 'cancelled': 'Đã hủy', 'completed': 'Hoàn thành'}[m.status] || m.status}
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 text-xs">
+                                  <div>
+                                    <span className="block text-[9px] text-slate-500 mb-0.5">Thời Gian</span>
+                                    <span className="font-bold text-white">{m.date} {m.time}</span>
+                                  </div>
+                                  <div>
+                                    <span className="block text-[9px] text-slate-500 mb-0.5">Loại Sân</span>
+                                    <span className="font-bold text-white">Sân {m.type || 7} người</span>
+                                  </div>
+                                  <div className="col-span-2">
+                                    <span className="block text-[9px] text-slate-500 mb-0.5">Địa Điểm / Tên Sân</span>
+                                    <span className="font-bold text-cyan-400">{v ? v.name : (m.district || 'Chưa chọn')}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Teams Info */}
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-center">
+                                  <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Đội Tạo Kèo (A)</span>
+                                  <div className="w-10 h-10 rounded-full bg-appDark-card mx-auto mb-2 flex items-center justify-center text-sm font-black text-white border border-slate-600">
+                                    {(m.teamName || 'A')[0]}
+                                  </div>
+                                  <span className="block text-xs font-extrabold text-white truncate">{m.teamName || 'Chưa có tên'}</span>
+                                  <span className="block text-[10px] text-cyan-400 font-mono mt-1">{m.phone}</span>
+                                </div>
+                                <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-center">
+                                  <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Đối Thủ (B)</span>
+                                  <div className="w-10 h-10 rounded-full bg-appDark-card mx-auto mb-2 flex items-center justify-center text-sm font-black text-slate-500 border border-slate-600">
+                                    {m.opponentName ? m.opponentName[0] : '?'}
+                                  </div>
+                                  <span className={`block text-xs font-extrabold truncate ${m.opponentName ? 'text-white' : 'text-slate-500'}`}>
+                                    {m.opponentName || 'Chưa chốt đối'}
+                                  </span>
+                                  <span className="block text-[10px] text-cyan-400 font-mono mt-1">{m.opponentPhone || '...'}</span>
+                                </div>
+                              </div>
+
+                              {/* Requests List */}
+                              <div>
+                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 border-l-2 border-blue-500 pl-2">Danh sách yêu cầu ghép ({m.requests?.length || 0})</h4>
+                                <div className="bg-appDark-deep rounded-xl border border-appDark-border p-2 space-y-2 max-h-32 overflow-y-auto no-scrollbar">
+                                  {!m.requests || m.requests.length === 0 ? (
+                                    <div className="text-center text-[10px] text-slate-500 py-3">Chưa có đội nào gửi yêu cầu</div>
+                                  ) : (
+                                    m.requests.map((r, i) => (
+                                      <div key={i} className="flex justify-between items-center p-2 bg-appDark-card rounded-lg border border-slate-700/50">
+                                        <div>
+                                          <span className="block text-xs font-bold text-white">{r.teamName}</span>
+                                          <span className="block text-[9px] text-slate-400">{r.phone}</span>
+                                        </div>
+                                        <span className="text-[9px] font-black text-blue-400 uppercase bg-blue-500/10 px-2 py-0.5 rounded">Đang chờ</span>
+                                      </div>
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Admin Actions Box */}
+                              <div className="bg-red-950/20 border border-red-900/30 rounded-xl p-3">
+                                <h4 className="text-[10px] font-bold text-red-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                  <span>⚡</span> Action Xử Lý Kèo
+                                </h4>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <button 
+                                    onClick={() => {
+                                      if(window.confirm('Xác nhận kèo này ĐÃ HOÀN THÀNH?')) {
+                                        setMatches(matches.map(match => match.id === m.id ? { ...match, status: 'Hoàn thành' } : match));
+                                        setModalType(null);
+                                      }
+                                    }}
+                                    className="bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 rounded-lg p-2 text-[10px] font-bold transition-all text-left flex items-center justify-between"
+                                  >
+                                    <span>Đánh dấu Hoàn thành</span>
+                                    <span>✓</span>
+                                  </button>
+                                  <button 
+                                    onClick={() => {
+                                      const reason = window.prompt("Nhập lý do hủy kèo (sẽ gửi thông báo cho 2 đội):");
+                                      if (reason) {
+                                        setMatches(matches.map(match => match.id === m.id ? { ...match, status: 'Đã hủy', cancelReason: reason } : match));
+                                        setModalType(null);
+                                      }
+                                    }}
+                                    className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg p-2 text-[10px] font-bold transition-all text-left flex items-center justify-between"
+                                  >
+                                    <span>Hủy Kèo</span>
+                                    <span>✗</span>
+                                  </button>
+                                  <button 
+                                    onClick={() => {
+                                      const rep = window.prompt("Nhập nội dung Report (Boom kèo, spam...):");
+                                      if (rep) {
+                                        setMatches(matches.map(match => match.id === m.id ? { ...match, hasComplaint: true, complaintNote: rep } : match));
+                                        setModalType(null);
+                                      }
+                                    }}
+                                    className="bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-lg p-2 text-[10px] font-bold transition-all text-left flex items-center justify-between"
+                                  >
+                                    <span>Đánh dấu Report</span>
+                                    <span>⚠️</span>
+                                  </button>
+                                  <button 
+                                    onClick={() => {
+                                      alert(`Thông tin liên hệ ẩn:\nĐội A: ${m.phone}\nĐội B: ${m.opponentPhone || 'Chưa có'}`);
+                                    }}
+                                    className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg p-2 text-[10px] font-bold transition-all text-left flex items-center justify-between"
+                                  >
+                                    <span>Mở khóa Liên Hệ</span>
+                                    <span>🔓</span>
+                                  </button>
+                                </div>
+                              </div>
+
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })()}
+
+{/* TAB 3: QUẢN LÝ USER */}
+                    {currentTab === "admin_ql_user" && (() => {
+                      const activeSub = ["user_list", "team_list", "top_active", "violations"].includes(adminSubTab) ? adminSubTab : "user_list";
+                      
+                      const userStats = {};
+                      users.forEach(u => {
+                        userStats[u.id] = { played: 0, created: 0, received: 0, cancelled: 0, total_involved: 0 };
+                      });
+                      
+                      matches.forEach(m => {
+                        const isCompleted = m.status === 'Hoàn thành' || m.status === 'completed';
+                        const isCancelled = m.status === 'Đã hủy' || m.status === 'cancelled';
+                        
+                        const author = users.find(u => u.phone === m.phone || u.id === m.author_user_id);
+                        if (author && userStats[author.id]) {
+                          userStats[author.id].created++;
+                          userStats[author.id].total_involved++;
+                          if (isCompleted) userStats[author.id].played++;
+                          if (isCancelled) userStats[author.id].cancelled++;
+                        }
+                        
+                        const opponent = users.find(u => u.phone === m.opponentPhone);
+                        if (opponent && userStats[opponent.id]) {
+                          userStats[opponent.id].received++;
+                          userStats[opponent.id].total_involved++;
+                          if (isCompleted) userStats[opponent.id].played++;
+                          if (isCancelled) userStats[opponent.id].cancelled++;
+                        }
+                      });
+                      
+                      const teamStats = {};
+                      teams.forEach(t => {
+                        teamStats[t.id] = { played: 0, created: 0, cancelled: 0 };
+                      });
+                      matches.forEach(m => {
+                        const isCompleted = m.status === 'Hoàn thành' || m.status === 'completed';
+                        const isCancelled = m.status === 'Đã hủy' || m.status === 'cancelled';
+                        const tA = teams.find(t => t.name === m.teamName || t.teamName === m.teamName);
+                        if (tA && teamStats[tA.id]) {
+                          teamStats[tA.id].created++;
+                          if (isCompleted) teamStats[tA.id].played++;
+                          if (isCancelled) teamStats[tA.id].cancelled++;
+                        }
+                        const tB = teams.find(t => t.name === m.opponentName || t.teamName === m.opponentName);
+                        if (tB && teamStats[tB.id]) {
+                          if (isCompleted) teamStats[tB.id].played++;
+                          if (isCancelled) teamStats[tB.id].cancelled++;
+                        }
+                      });
+
+                      const totalUsers = users.length;
+                      const activeUsers = users.filter(u => (userStats[u.id] && userStats[u.id].total_involved > 0) || u.rating > 0).length;
+                      const totalTeams = teams.length;
+                      const activeTeams = teams.filter(t => (teamStats[t.id] && teamStats[t.id].played > 0)).length;
+                      const activeOwners = users.filter(u => u.roles?.includes("venue_owner") || u.role === "chủ sân").length;
+
+                      return (
+                        <div className="space-y-4 animate-fade-in text-left">
+                          
+                          {/* KPI HEADERS */}
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                            <div className="bg-appDark-deep border border-appDark-border rounded-xl p-2.5 text-center shadow-md">
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Tổng User</span>
+                              <span className="text-sm font-black text-white">{totalUsers}</span>
+                            </div>
+                            <div className="bg-appDark-deep border border-emerald-500/30 rounded-xl p-2.5 text-center shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                              <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider block">User Active</span>
+                              <span className="text-sm font-black text-emerald-400">{activeUsers}</span>
+                            </div>
+                            <div className="bg-appDark-deep border border-appDark-border rounded-xl p-2.5 text-center shadow-md">
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Tổng Đội</span>
+                              <span className="text-sm font-black text-white">{totalTeams}</span>
+                            </div>
+                            <div className="bg-appDark-deep border border-cyan-500/30 rounded-xl p-2.5 text-center shadow-[0_0_10px_rgba(6,182,212,0.1)]">
+                              <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-wider block">Đội Active</span>
+                              <span className="text-sm font-black text-cyan-400">{activeTeams}</span>
+                            </div>
+                            <div className="bg-appDark-deep border border-purple-500/30 rounded-xl p-2.5 text-center shadow-[0_0_10px_rgba(168,85,247,0.1)] col-span-2 md:col-span-1">
+                              <span className="text-[9px] font-bold text-purple-400 uppercase tracking-wider block">User Mới Tuần Này</span>
+                              <span className="text-sm font-black text-purple-400">
+                                {users.filter(u => u.created_at && (new Date() - new Date(u.created_at)) < 7 * 24 * 60 * 60 * 1000).length}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* INTERNAL NAVIGATION */}
+                          <div className="flex bg-appDark-deep p-1 rounded-xl border border-appDark-border gap-1 overflow-x-auto no-scrollbar">
+                            <button
+                              onClick={() => setAdminSubTab("user_list")}
+                              className={`flex-1 min-w-[70px] text-center py-2 text-[10px] font-bold rounded-lg transition-all whitespace-nowrap ${
+                                activeSub === "user_list" 
+                                  ? "bg-gradient-to-r from-neon-green to-emerald-500 text-appDark-deep shadow-md" 
+                                  : "text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              👥 Users
+                            </button>
+                            <button
+                              onClick={() => setAdminSubTab("team_list")}
+                              className={`flex-1 min-w-[70px] text-center py-2 text-[10px] font-bold rounded-lg transition-all whitespace-nowrap ${
+                                activeSub === "team_list" 
+                                  ? "bg-gradient-to-r from-cyan-400 to-blue-500 text-appDark-deep shadow-md" 
+                                  : "text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              🛡️ Teams
+                            </button>
+                            <button
+                              onClick={() => setAdminSubTab("top_active")}
+                              className={`flex-1 min-w-[70px] text-center py-2 text-[10px] font-bold rounded-lg transition-all whitespace-nowrap ${
+                                activeSub === "top_active" 
+                                  ? "bg-gradient-to-r from-amber-400 to-orange-500 text-appDark-deep shadow-md" 
+                                  : "text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              🔥 Top
+                            </button>
+                            <button
+                              onClick={() => setAdminSubTab("violations")}
+                              className={`flex-1 min-w-[70px] text-center py-2 text-[10px] font-bold rounded-lg transition-all whitespace-nowrap ${
+                                activeSub === "violations" 
+                                  ? "bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-md" 
+                                  : "text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              🚨 Vi Phạm
+                            </button>
+                          </div>
+
+                          {/* SECTION 1: USERS */}
+                          {activeSub === "user_list" && (
+                            <div className="space-y-3 animate-fade-in">
+                              <div className="bg-appDark-deep p-2.5 rounded-xl border border-appDark-border flex items-center">
+                                <span className="text-slate-400 px-2">🔍</span>
+                                <input 
+                                  type="text" 
+                                  id="searchUserInput"
+                                  placeholder="Tìm Tên, SĐT..." 
+                                  className="w-full bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none"
+                                  onInput={(e) => {
+                                     const v = e.target.value.toLowerCase();
+                                     document.querySelectorAll('.admin-u-card').forEach(c => {
+                                       c.style.display = c.getAttribute('data-s').toLowerCase().includes(v) ? 'flex' : 'none';
+                                     });
+                                  }}
+                                />
+                              </div>
+
+                              <div className="space-y-3 max-h-[55vh] overflow-y-auto no-scrollbar pb-10">
+                                {users.map(u => {
+                                  const searchStr = `${u.name} ${u.phone} ${u.roles?.join(' ')} ${u.role}`;
+                                  const isLocked = u.status === 'locked';
+                                  
+                                  // Determine Role Display
+                                  let roleDisplay = "Player";
+                                  let roleColor = "text-slate-400 bg-slate-500/20 border-slate-500/30";
+                                  
+                                  if (u.isAdmin || u.roles?.includes("super_admin")) {
+                                    roleDisplay = "Super Admin";
+                                    roleColor = "text-red-400 bg-red-500/20 border-red-500/30";
+                                  } else if (u.roles?.includes("venue_owner") || u.role === "chủ sân") {
+                                    roleDisplay = "Venue Owner";
+                                    roleColor = "text-purple-400 bg-purple-500/20 border-purple-500/30";
+                                  } else if (u.roles?.includes("team_owner")) {
+                                    roleDisplay = "Team Owner";
+                                    roleColor = "text-amber-400 bg-amber-500/20 border-amber-500/30";
+                                  } else if (u.roles?.includes("team_admin")) {
+                                    roleDisplay = "Team Admin";
+                                    roleColor = "text-blue-400 bg-blue-500/20 border-blue-500/30";
+                                  }
+
+                                  return (
+                                    <div key={u.id} data-s={searchStr} className={`admin-u-card bg-appDark-card border ${isLocked ? 'border-red-500/50 opacity-75' : 'border-appDark-border'} rounded-xl p-3 flex flex-col md:flex-row gap-3 shadow-md`}>
+                                      <div className="flex-1 flex gap-3 items-center">
+                                        <div className="w-12 h-12 rounded-full bg-appDark-deep flex items-center justify-center shrink-0 border border-slate-600 relative">
+                                          <span className="text-lg font-bold text-slate-300">
+                                            {(u.name || 'U').charAt(0).toUpperCase()}
+                                          </span>
+                                          {isLocked && <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border border-appDark-card flex items-center justify-center text-[8px]">🔒</div>}
+                                        </div>
+                                        <div className="overflow-hidden space-y-1">
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <h5 className="font-extrabold text-sm text-white">{u.name || 'Vô Danh'}</h5>
+                                            <span className={`px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded border ${roleColor}`}>
+                                              {roleDisplay}
+                                            </span>
+                                          </div>
+                                          <p className="text-[11px] text-cyan-400 font-medium">{u.phone}</p>
+                                          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[9px] text-slate-400 font-semibold">
+                                            <span>Tham gia: {u.created_at ? new Date(u.created_at).toLocaleDateString('vi-VN') : '15/05/2026'}</span>
+                                            <span>Số trận: {userStats[u.id] ? userStats[u.id].played : 0}</span>
+                                            <span className="text-emerald-400">HĐ: Hôm nay</span>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Admin Actions */}
+                                      <div className="flex flex-col justify-center gap-2 shrink-0 md:w-32">
+                                        <button 
+                                          onClick={() => {
+                                            setModalType('admin_user_detail');
+                                            setModalData(u);
+                                          }}
+                                          className="w-full py-2 bg-appDark-deep text-slate-300 text-[10px] font-bold rounded-lg border border-appDark-border hover:bg-slate-700 transition-all"
+                                        >
+                                          Xem chi tiết
+                                        </button>
+                                        <button 
+                                          onClick={() => {
+                                            if (window.confirm(isLocked ? "Mở khóa tài khoản này?" : "Khóa tài khoản này?")) {
+                                              setUsers(users.map(user => user.id === u.id ? { ...user, status: isLocked ? 'active' : 'locked' } : user));
+                                            }
+                                          }}
+                                          className={`w-full py-2 text-[10px] font-bold rounded-lg border transition-all ${
+                                            isLocked 
+                                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                                              : 'bg-red-500/10 text-red-500 border-red-500/30 hover:bg-red-500/20'
+                                          }`}
+                                        >
+                                          {isLocked ? '🔓 Mở khóa' : '🔒 Khóa TK'}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* SECTION 2: TEAMS */}
+                          {activeSub === "team_list" && (
+                            <div className="space-y-3 animate-fade-in">
+                              <div className="bg-appDark-deep p-2.5 rounded-xl border border-appDark-border flex items-center">
+                                <span className="text-slate-400 px-2">🔍</span>
+                                <input 
+                                  type="text" 
+                                  placeholder="Tìm Tên Đội, Khu vực..." 
+                                  className="w-full bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none"
+                                  onInput={(e) => {
+                                     const v = e.target.value.toLowerCase();
+                                     document.querySelectorAll('.admin-t-card').forEach(c => {
+                                       c.style.display = c.getAttribute('data-s').toLowerCase().includes(v) ? 'block' : 'none';
+                                     });
+                                  }}
+                                />
+                              </div>
+
+                              <div className="space-y-3 max-h-[55vh] overflow-y-auto no-scrollbar pb-10">
+                                {teams.map(t => {
+                                  const searchStr = `${t.name || t.teamName} ${t.district}`;
+                                  const owner = users.find(u => u.id === t.owner_user_id);
+                                  
+                                  return (
+                                    <div key={t.id} data-s={searchStr} className="admin-t-card bg-appDark-card border border-appDark-border rounded-xl p-3 shadow-md space-y-2">
+                                      <div className="flex justify-between items-start">
+                                        <div className="flex items-center gap-2">
+                                          <h5 className="font-extrabold text-sm text-white">{t.name || t.teamName}</h5>
+                                          {t.isVerified && <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/30">✓ Verified</span>}
+                                          {t.isPrestige && <span className="text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30">🏆 Uy Tín</span>}
+                                        </div>
+                                        <span className="text-[9px] bg-appDark-deep px-2 py-0.5 rounded border border-appDark-border text-slate-400">
+                                          {t.district}
+                                        </span>
+                                      </div>
+                                      
+                                      <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] text-slate-300">
+                                        <p>Chủ đội: <span className="font-bold text-cyan-400">{owner?.name || t.representative || 'Chưa rõ'}</span></p>
+                                        <p>Trình độ: <span className="font-bold">{t.level}</span></p>
+                                        <p>Số trận: <span className="font-bold text-neon-green">{teamStats[t.id] ? teamStats[t.id].played : 0}</span></p>
+                                        <p>Rating / Uy tín: <span className="font-bold text-amber-400">{t.rating || 4.5} ⭐</span></p>
+                                        <p>Tỷ lệ hủy: <span className="font-bold text-red-400">{t.cancellationRate || '5%'}</span></p>
+                                      </div>
+
+                                      <div className="pt-2 flex flex-wrap gap-2 border-t border-appDark-border/50">
+                                        <button 
+                                          onClick={() => {
+                                            setTeams(teams.map(team => team.id === t.id ? { ...team, isVerified: !team.isVerified } : team));
+                                          }}
+                                          className="px-2 py-1 bg-blue-500/10 text-blue-400 text-[9px] font-bold rounded border border-blue-500/30 hover:bg-blue-500/20 transition-all"
+                                        >
+                                          {t.isVerified ? 'Hủy Verify' : 'Xác minh (Verify)'}
+                                        </button>
+                                        <button 
+                                          onClick={() => {
+                                            setTeams(teams.map(team => team.id === t.id ? { ...team, isPrestige: !team.isPrestige } : team));
+                                          }}
+                                          className="px-2 py-1 bg-amber-500/10 text-amber-400 text-[9px] font-bold rounded border border-amber-500/30 hover:bg-amber-500/20 transition-all"
+                                        >
+                                          {t.isPrestige ? 'Hủy Uy Tín' : 'Đánh dấu Uy Tín'}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* SECTION 3: TOP ACTIVE */}
+                          {activeSub === "top_active" && (
+                            <div className="space-y-4 animate-fade-in">
+                              <div className="bg-gradient-to-r from-amber-900/40 to-appDark-card border border-amber-500/30 rounded-xl p-4 shadow-lg text-center">
+                                <h4 className="text-amber-400 font-black text-sm uppercase tracking-widest mb-1">🔥 Top Hoạt Động</h4>
+                                <p className="text-[10px] text-slate-400">Danh sách các đội bóng có đóng góp nhiều nhất</p>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Top Matches */}
+                                <div className="bg-appDark-card border border-appDark-border rounded-xl p-3 shadow-md">
+                                  <h5 className="text-xs font-bold text-neon-green mb-3 border-b border-appDark-border pb-2">Đội Đá Nhiều Nhất</h5>
+                                  <div className="space-y-2">
+                                    {teams.slice().sort((a,b) => (teamStats[b.id]?.played || 0) - (teamStats[a.id]?.played || 0)).slice(0,5).map((t, idx) => (
+                                      <div key={'m'+t.id} className="flex justify-between items-center text-xs">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-black text-slate-500">#{idx+1}</span>
+                                          <span className="font-bold text-white">{t.name || t.teamName}</span>
+                                        </div>
+                                        <span className="text-neon-green font-black">{teamStats[t.id]?.played || 0} trận</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Top Creation */}
+                                <div className="bg-appDark-card border border-appDark-border rounded-xl p-3 shadow-md">
+                                  <h5 className="text-xs font-bold text-cyan-400 mb-3 border-b border-appDark-border pb-2">Đội Tạo Kèo Nhiều Nhất</h5>
+                                  <div className="space-y-2">
+                                    {teams.slice().sort((a,b) => (teamStats[b.id]?.created || 0) - (teamStats[a.id]?.created || 0)).slice(0,5).map((t, idx) => (
+                                      <div key={'c'+t.id} className="flex justify-between items-center text-xs">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-black text-slate-500">#{idx+1}</span>
+                                          <span className="font-bold text-white">{t.name || t.teamName}</span>
+                                        </div>
+                                        <span className="text-cyan-400 font-black">{teamStats[t.id]?.created || 0} kèo</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Top Prestige */}
+                                <div className="bg-appDark-card border border-appDark-border rounded-xl p-3 shadow-md">
+                                  <h5 className="text-xs font-bold text-amber-400 mb-3 border-b border-appDark-border pb-2">Đội Uy Tín Nhất (Rating &gt; 4.8)</h5>
+                                  <div className="space-y-2">
+                                    {teams.filter(t => (t.rating || 4.5) >= 4.8).slice(0,5).map((t, idx) => (
+                                      <div key={'r'+t.id} className="flex justify-between items-center text-xs">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-black text-amber-500 text-sm">🏆</span>
+                                          <span className="font-bold text-white">{t.name || t.teamName}</span>
+                                        </div>
+                                        <span className="text-amber-400 font-black">{t.rating || 5.0} ⭐</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Top Players */}
+                                <div className="bg-appDark-card border border-appDark-border rounded-xl p-3 shadow-md">
+                                  <h5 className="text-xs font-bold text-purple-400 mb-3 border-b border-appDark-border pb-2">Cầu Thủ Đá Nhiều Nhất</h5>
+                                  <div className="space-y-2">
+                                    {users.slice().sort((a,b) => (userStats[b.id]?.played || 0) - (userStats[a.id]?.played || 0)).slice(0,5).map((u, idx) => {
+                                      const pCount = userStats[u.id]?.played || 0;
+                                      return (
+                                        <div key={'u'+u.id} className="flex justify-between items-center text-xs">
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-black text-slate-500">#{idx+1}</span>
+                                            <span className="font-bold text-white">{u.name || 'Cầu thủ'}</span>
+                                          </div>
+                                          <span className="text-purple-400 font-black">{pCount} trận</span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* USER DETAIL MODAL */}
+                          {modalType === 'admin_user_detail' && modalData && (() => {
+                            const u = modalData;
+                            return (
+                              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-0">
+                                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModalType(null)}></div>
+                                <div className="bg-appDark-deep border border-appDark-border w-full max-w-sm rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden animate-slide-up-modal">
+                                  {/* Header */}
+                                  <div className="p-3.5 border-b border-appDark-border flex justify-between items-center bg-appDark-card">
+                                    <h3 className="text-white font-extrabold text-sm uppercase tracking-wider flex items-center gap-2">
+                                      👤 Chi Tiết User
+                                    </h3>
+                                    <button onClick={() => setModalType(null)} className="w-8 h-8 rounded-full bg-appDark-deep flex items-center justify-center text-slate-400 hover:text-white border border-appDark-border transition-all">✕</button>
+                                  </div>
+                                  {/* Content */}
+                                  <div className="p-4 space-y-3">
+                                    <div className="flex justify-between items-center border-b border-appDark-border/50 pb-2">
+                                      <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Tên</span>
+                                      <span className="text-white font-bold text-xs">{u.name || 'Vô Danh'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center border-b border-appDark-border/50 pb-2">
+                                      <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">SĐT</span>
+                                      <span className="text-cyan-400 font-bold text-xs">{u.phone || 'Chưa cập nhật'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center border-b border-appDark-border/50 pb-2">
+                                      <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Ngày tham gia</span>
+                                      <span className="text-slate-200 font-bold text-xs">{u.created_at ? new Date(u.created_at).toLocaleDateString('vi-VN') : '15/05/2026'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center border-b border-appDark-border/50 pb-2">
+                                      <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Số trận</span>
+                                      <span className="text-white font-bold text-xs">{userStats[u.id] ? userStats[u.id].played : 0}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center border-b border-appDark-border/50 pb-2">
+                                      <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Kèo tạo</span>
+                                      <span className="text-emerald-400 font-bold text-xs">{userStats[u.id] ? userStats[u.id].created : 0}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center border-b border-appDark-border/50 pb-2">
+                                      <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Kèo nhận</span>
+                                      <span className="text-blue-400 font-bold text-xs">{userStats[u.id] ? userStats[u.id].received : 0}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center border-b border-appDark-border/50 pb-2">
+                                      <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Tỷ lệ huỷ</span>
+                                      <span className="text-red-400 font-bold text-xs">
+                                        {userStats[u.id] && userStats[u.id].total_involved > 0 ? ((userStats[u.id].cancelled / userStats[u.id].total_involved) * 100).toFixed(1) : "0.0"}%
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between items-center border-b border-appDark-border/50 pb-2">
+                                      <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Số report</span>
+                                      <span className="text-orange-400 font-bold text-xs">{u.reportCount || 0}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center border-b border-appDark-border/50 pb-2">
+                                      <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Đội đang tham gia</span>
+                                      <span className="text-white font-bold text-xs text-right max-w-[150px] truncate">{teams.find(t => t.owner_user_id === u.id)?.name || teams.find(t => t.owner_user_id === u.id)?.teamName || 'Không có'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center border-b border-appDark-border/50 pb-2">
+                                      <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Vai trò</span>
+                                      <span className="text-amber-400 font-black text-[10px] uppercase px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">{u.isAdmin || u.roles?.includes("super_admin") ? "Super Admin" : u.roles?.includes("venue_owner") || u.role === "chủ sân" ? "Venue Owner" : u.roles?.includes("team_owner") ? "Team Owner" : u.roles?.includes("team_admin") ? "Team Admin" : "Player"}</span>
+                                    </div>
+                                  </div>
+                                  {/* Footer */}
+                                  <div className="p-3 bg-appDark-card border-t border-appDark-border">
+                                    <button onClick={() => setModalType(null)} className="w-full py-2.5 bg-appDark-deep text-slate-300 font-bold rounded-xl border border-appDark-border hover:bg-slate-700 transition-all text-xs">
+                                      Đóng
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {/* SECTION 4: VIOLATIONS */}
+                          {activeSub === "violations" && (
+                            <div className="space-y-4 animate-fade-in">
+                              <div className="bg-gradient-to-r from-red-900/40 to-appDark-card border border-red-500/30 rounded-xl p-4 shadow-lg flex items-center gap-3">
+                                <span className="text-3xl">🚨</span>
+                                <div>
+                                  <h4 className="text-red-400 font-black text-sm uppercase tracking-widest">Danh sách đen (Vi phạm)</h4>
+                                  <p className="text-[10px] text-slate-400">Các đối tượng có hành vi Boom kèo, Spam, Hủy nhiều</p>
+                                </div>
+                              </div>
+
+                              <div className="space-y-3">
+                                {(() => {
+                                  const violations = [];
+                                  users.forEach(u => {
+                                    if (u.reportCount > 0) {
+                                      violations.push({ id: 'vu_'+u.id, type: 'user', name: u.name, phone: u.phone, reason: `Bị report ${u.reportCount} lần`, severity: u.reportCount >= 3 ? 'Critical' : 'Medium', uId: u.id });
+                                    } else if (userStats[u.id] && userStats[u.id].total_involved >= 3 && (userStats[u.id].cancelled / userStats[u.id].total_involved) >= 0.5) {
+                                      violations.push({ id: 'vu_c_'+u.id, type: 'user', name: u.name, phone: u.phone, reason: `Tỷ lệ hủy kèo cao (${Math.round((userStats[u.id].cancelled / userStats[u.id].total_involved)*100)}%)`, severity: 'High', uId: u.id });
+                                    }
+                                  });
+                                  teams.forEach(t => {
+                                    const total = (teamStats[t.id]?.played || 0) + (teamStats[t.id]?.cancelled || 0);
+                                    if (total >= 3 && (teamStats[t.id].cancelled / total) >= 0.5) {
+                                      const owner = users.find(u => u.id === t.owner_user_id);
+                                      violations.push({ id: 'vt_'+t.id, type: 'team', name: t.name || t.teamName, phone: owner ? owner.phone : 'Không rõ', reason: `Tỷ lệ hủy kèo cao (${Math.round((teamStats[t.id].cancelled / total)*100)}%)`, severity: 'High', tId: t.id });
+                                    }
+                                  });
+                                  if (violations.length === 0) {
+                                    return <div className="text-center text-slate-500 text-xs italic p-4">Hiện không có đối tượng vi phạm nào</div>;
+                                  }
+                                  return violations.sort((a,b) => (b.severity === 'Critical' ? 1 : 0) - (a.severity === 'Critical' ? 1 : 0)).map(v => (
+                                    <div key={v.id} className="bg-appDark-card border-l-4 border-l-red-500 border-y border-r border-red-500/20 rounded-xl p-3 shadow-md flex justify-between items-center gap-3">
+                                      <div>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[9px] font-black uppercase bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded border border-red-500/30">
+                                            {v.type}
+                                          </span>
+                                          <h5 className="font-bold text-white text-xs">{v.name}</h5>
+                                          {v.severity === 'Critical' && <span className="text-[9px] bg-red-600 text-white px-1 py-0.5 rounded animate-pulse">NGHIÊM TRỌNG</span>}
+                                        </div>
+                                        <p className="text-[10px] text-cyan-400 font-medium mt-0.5">{v.phone}</p>
+                                        <p className="text-[10px] text-slate-400 mt-1 italic">"{v.reason}"</p>
+                                      </div>
+                                      <div className="flex flex-col gap-1.5 shrink-0">
+                                        <button className="px-2 py-1 bg-orange-500/10 text-orange-400 text-[9px] font-bold rounded border border-orange-500/30 hover:bg-orange-500/20 transition-all">Cảnh cáo</button>
+                                        <button className="px-2 py-1 bg-red-500/10 text-red-500 text-[9px] font-bold rounded border border-red-500/30 hover:bg-red-500/20 transition-all">Khóa 7 Ngày</button>
+                                      </div>
+                                    </div>
+                                  ));
+                                })()}
+                              </div>
+                            </div>
                           )}
                         </div>
+                      );
+                    })()}
+
+                    {/* ═══════════════════════════════════════════════ */}
+                    {/* TAB 4: QUẢN LÝ SÂN - FULL UPGRADE             */}
+                    {/* ═══════════════════════════════════════════════ */}
+                    {currentTab === "admin_ql_san" && (
+                      <div className="space-y-4 animate-fade-in text-left">
+
+                        {/* HEADER */}
+                        <div className="flex justify-between items-center border-b border-appDark-border/30 pb-2">
+                          <h4 className="text-xs font-black uppercase tracking-wider text-neon-green flex items-center gap-2">
+                            🏟️ Quản Lý Sân & Slot
+                          </h4>
+                          <span className="text-[10px] bg-neon-green/10 border border-neon-green/20 px-2 py-0.5 rounded text-neon-green font-bold">
+                            Tổng: {venues.length} cụm sân
+                          </span>
+                        </div>
+
+                        {/* KPI METRICS GRID */}
+                        {(() => {
+                          const verifiedVenues = venues.filter(v => v.verification_status === "verified");
+                          const allSlots = slots || [];
+                          const now = new Date();
+                          const startOfWeek = new Date(now);
+                          startOfWeek.setDate(now.getDate() - now.getDay());
+                          startOfWeek.setHours(0,0,0,0);
+                          const endOfWeek = new Date(startOfWeek);
+                          endOfWeek.setDate(startOfWeek.getDate() + 7);
+                          
+                          const weekSlots = allSlots.filter(s => {
+                            try {
+                              const parts = (s.date || "").split("/");
+                              if (parts.length === 3) {
+                                const slotDate = new Date(parts[2] + "-" + parts[1] + "-" + parts[0]);
+                                return slotDate >= startOfWeek && slotDate < endOfWeek;
+                              }
+                            } catch(e) {}
+                            return false;
+                          });
+                          const totalWeekSlots = weekSlots.length || allSlots.length;
+                          const bookedSlots = allSlots.filter(s => s.status === "booked" || s.bookedBy);
+                          const bookedWeekSlots = weekSlots.filter(s => s.status === "booked" || s.bookedBy);
+                          const fillRate = totalWeekSlots > 0 ? ((bookedWeekSlots.length / totalWeekSlots) * 100).toFixed(1) : "0.0";
+                          const revenue = bookedSlots.reduce((sum, s) => sum + (parseInt(String(s.price || "0").replace(/\D/g, "")) || 0), 0);
+                          const commission = bookedSlots.length * 50000;
+
+                          const kpis = [
+                            { label: "Tổng sân", value: venues.length, icon: "🏟️", color: "text-cyan-400", bg: "from-cyan-500/10 to-cyan-600/5", border: "border-cyan-500/20" },
+                            { label: "Sân active", value: verifiedVenues.length, icon: "🟢", color: "text-emerald-400", bg: "from-emerald-500/10 to-emerald-600/5", border: "border-emerald-500/20" },
+                            { label: "Doanh thu App", value: (revenue / 1000000).toFixed(1) + "M", icon: "💰", color: "text-neon-yellow", bg: "from-amber-500/10 to-amber-600/5", border: "border-amber-500/20" },
+                            { label: "Hoa hồng DK", value: (commission / 1000000).toFixed(1) + "M", icon: "🏦", color: "text-orange-400", bg: "from-orange-500/10 to-orange-600/5", border: "border-orange-500/20" },
+                          ];
+
+                          return (
+                            <div className="grid grid-cols-4 gap-1.5">
+                              {kpis.map((k, i) => (
+                                <div key={i} className={`bg-gradient-to-br ${k.bg} border ${k.border} rounded-xl p-2 flex flex-col items-center justify-center text-center backdrop-blur-sm`}>
+                                  <span className="text-sm mb-0.5">{k.icon}</span>
+                                  <span className={`text-sm font-black ${k.color}`}>{k.value}</span>
+                                  <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider mt-0.5 leading-tight">{k.label}</span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
+
+                        {/* SUB-TAB NAVIGATION */}
+                        <div className="flex gap-1 bg-appDark-deep/60 rounded-xl p-1 border border-appDark-border/30">
+                          {[
+                            { key: "venues", label: "🏢 Danh sách Sân" },
+                            { key: "registrations", label: "⌛ Duyệt Chủ Sân" },
+                            { key: "slots", label: "🏆 BXH Sân" },
+                          ].map(tab => (
+                            <button
+                              key={tab.key}
+                              type="button"
+                              onClick={() => setAdminVenueSubTab(tab.key)}
+                              className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all duration-300 ${
+                                adminVenueSubTab === tab.key
+                                  ? "bg-gradient-to-r from-neon-green/20 to-emerald-500/10 text-neon-green border border-neon-green/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
+                                  : "text-slate-400 hover:text-slate-300 hover:bg-appDark-card/50"
+                              }`}
+                            >
+                              {tab.label}
+                              {tab.key === "registrations" && venues.filter(v => v.verification_status === "pending_verification").length > 0 && (
+                                <span className="ml-1 inline-flex items-center justify-center w-4 h-4 text-[8px] font-black bg-red-500 text-white rounded-full animate-pulse">
+                                  {venues.filter(v => v.verification_status === "pending_verification").length}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* SUB-TAB 1: VENUE LIST */}
+                        {adminVenueSubTab === "venues" && (
+                          <div className="space-y-3">
+                            <div className="relative">
+                              <input
+                                type="text"
+                                placeholder="Tìm kiếm sân theo tên, quận, địa chỉ..."
+                                value={adminVenueSearch}
+                                onChange={(e) => setAdminVenueSearch(e.target.value)}
+                                className="w-full text-xs bg-appDark-deep border border-appDark-border rounded-xl pl-8 pr-3 py-2 text-white focus:outline-none focus:border-neon-green transition-all"
+                              />
+                              <span className="absolute left-2.5 top-2.5 text-xs text-slate-500">🔍</span>
+                              {adminVenueSearch && (
+                                <button onClick={() => setAdminVenueSearch("")} className="absolute right-2.5 top-2 text-slate-400 hover:text-white text-xs font-black">✕</button>
+                              )}
+                            </div>
+
+                            <div className="space-y-2 max-h-[55vh] overflow-y-auto pr-1 no-scrollbar">
+                              {(() => {
+                                const allSlots = slots || [];
+                                const filteredVenues = venues.filter(v => {
+                                  const s = adminVenueSearch.toLowerCase();
+                                  return (v.name || "").toLowerCase().includes(s) ||
+                                    (v.district || "").toLowerCase().includes(s) ||
+                                    (v.address || "").toLowerCase().includes(s);
+                                });
+
+                                if (filteredVenues.length === 0) {
+                                  return (
+                                    <div className="bg-appDark-card border border-appDark-border rounded-xl p-8 text-center text-xs text-slate-400">
+                                      Không tìm thấy cụm sân nào.
+                                    </div>
+                                  );
+                                }
+
+                                return filteredVenues.map(v => {
+                                  const ownerUser = users.find(u => u.id === v.owner_user_id) || { name: "Chủ sân", phone: v.phone };
+                                  const venueFields = (fields || []).filter(f => f.venueId === v.id);
+                                  const venueFieldIds = venueFields.map(f => f.fieldId);
+                                  const venueSlots = allSlots.filter(s => venueFieldIds.includes(s.fieldId));
+                                  const bookedVSlots = venueSlots.filter(s => s.status === "booked" || s.bookedBy);
+                                  const vFillRate = venueSlots.length > 0 ? ((bookedVSlots.length / venueSlots.length) * 100).toFixed(0) : "0";
+                                  const vRevenue = bookedVSlots.reduce((sum, s) => sum + (parseInt(String(s.price || "0").replace(/\D/g, "")) || 0), 0);
+                                  const vCommission = bookedVSlots.length * 50000;
+
+                                  const isVerified = v.verification_status === "verified";
+                                  const isPending = v.verification_status === "pending_verification";
+                                  const isRejected = v.verification_status === "rejected";
+
+                                  const badgeConfig = isVerified
+                                    ? { text: "🟢 Verified", cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" }
+                                    : isPending
+                                    ? { text: "🟡 Pending", cls: "bg-amber-500/10 text-amber-400 border-amber-500/20" }
+                                    : isRejected
+                                    ? { text: "🔴 Rejected", cls: "bg-red-500/10 text-red-400 border-red-500/20" }
+                                    : { text: "⚫ Inactive", cls: "bg-slate-500/10 text-slate-400 border-slate-500/20" };
+
+                                  return (
+                                    <div key={v.id} className="bg-appDark-card border border-appDark-border/60 rounded-xl p-3 space-y-2 text-xs hover:border-neon-green/30 transition-all">
+                                      <div className="flex justify-between items-start gap-2">
+                                        <div className="space-y-0.5 flex-1 min-w-0">
+                                          <h6 className="font-extrabold text-white flex items-center gap-1.5 flex-wrap">
+                                            🏟️ {v.name}
+                                            <span className={`text-[7px] font-black uppercase px-1.5 py-0.5 rounded border ${badgeConfig.cls}`}>
+                                              {badgeConfig.text}
+                                            </span>
+                                          </h6>
+                                          <p className="text-[10px] text-slate-400">
+                                            👤 <strong className="text-slate-300">{ownerUser.name}</strong> • 📞 <strong className="text-neon-green">{v.phone || ownerUser.phone}</strong>
+                                          </p>
+                                          <p className="text-[10px] text-slate-500">📍 {v.district} — {v.address}</p>
+                                        </div>
+                                        <div className="flex flex-col gap-1 items-end shrink-0">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const nextStatus = isVerified ? "rejected" : "verified";
+                                              setVenues(prev => prev.map(x => x.id === v.id ? { ...x, verification_status: nextStatus } : x));
+                                            }}
+                                            className={`text-[8px] font-bold px-2 py-1 rounded transition-all border ${isVerified ? 'bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border-red-500/20' : 'bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border-emerald-500/20'}`}
+                                          >
+                                            {isVerified ? "Ngưng HĐ" : "Kích Hoạt"}
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              if (confirm(`Xóa vĩnh viễn cụm sân "${v.name}"?`)) {
+                                                setVenues(prev => prev.filter(x => x.id !== v.id));
+                                              }
+                                            }}
+                                            className="text-[8px] font-bold bg-red-900/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-900/30 px-2 py-1 rounded transition-all"
+                                          >
+                                            Xóa
+                                          </button>
+                                        </div>
+                                      </div>
+
+                                      <div className="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-appDark-border/20">
+                                        <div className="bg-appDark-deep/50 rounded-lg p-1.5 text-left space-y-0.5">
+                                          <div className="text-[8px] text-slate-500 font-bold uppercase">Ngày tham gia</div>
+                                          <div className="text-[10px] font-black text-white">{v.joinDate || "01/01/2024"}</div>
+                                        </div>
+                                        <div className="bg-appDark-deep/50 rounded-lg p-1.5 text-left space-y-0.5">
+                                          <div className="text-[8px] text-slate-500 font-bold uppercase">Lần HĐ Cuối</div>
+                                          <div className="text-[10px] font-black text-slate-300">{v.lastActive || "Hôm qua"}</div>
+                                        </div>
+                                        <div className="bg-appDark-deep/50 rounded-lg p-1.5 text-left space-y-0.5">
+                                          <div className="text-[8px] text-slate-500 font-bold uppercase">Trạng thái HĐ</div>
+                                          {parseInt(v.id || '1') % 3 === 0 ? (
+                                            <div className="text-[10px] font-black text-red-400 animate-pulse flex items-center gap-1">⚠️ Ngừng HĐ &gt; 30 ngày</div>
+                                          ) : (
+                                            <div className="text-[10px] font-black text-emerald-400">✅ Đang hoạt động</div>
+                                          )}
+                                        </div>
+                                        <div className="col-span-3 bg-appDark-deep/50 rounded-lg p-1.5 text-left space-y-0.5 relative group">
+                                          <div className="text-[8px] text-slate-500 font-bold uppercase flex justify-between">
+                                            <span>Ghi chú nội bộ</span>
+                                            <span className="text-[8px] text-neon-green opacity-0 group-hover:opacity-100 transition-opacity">✏️ Click để sửa</span>
+                                          </div>
+                                          <input 
+                                            type="text" 
+                                            value={v.notes || ""}
+                                            onChange={(e) => {
+                                              const newNotes = e.target.value;
+                                              setVenues(prev => prev.map(x => x.id === v.id ? { ...x, notes: newNotes } : x));
+                                            }}
+                                            placeholder="Thêm ghi chú..."
+                                            className="w-full bg-transparent text-[10px] text-slate-300 italic focus:outline-none focus:text-white focus:not-italic border-b border-transparent focus:border-neon-green transition-all"
+                                          />
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="flex items-center justify-between text-[9px] text-slate-500 px-1">
+                                        <span>⭐ {v.rating || "N/A"}</span>
+                                        <span>🏦 Hoa hồng: {(vCommission / 1000).toFixed(0)}K</span>
+                                        <span>📏 {venueFields.length} sân con</span>
+                                      </div>
+                                    </div>
+                                  );
+                                });
+                              })()}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* SUB-TAB 2: VENUE OWNER APPROVAL */}
+                        {adminVenueSubTab === "registrations" && (
+                          <div className="space-y-3">
+                            <h5 className="text-[10px] font-black text-neon-yellow uppercase tracking-wider flex items-center gap-1.5">
+                              ⌛ YÊU CẦU ĐĂNG KÝ LÀM CHỦ SÂN ({venues.filter(v => v.verification_status === "pending_verification").length})
+                            </h5>
+
+                            {venues.filter(v => v.verification_status === "pending_verification").length === 0 ? (
+                              <div className="bg-appDark-card border border-appDark-border rounded-xl p-8 text-center space-y-2">
+                                <p className="text-2xl">✅</p>
+                                <p className="text-xs text-slate-400 font-semibold">Không có yêu cầu duyệt sân nào đang chờ.</p>
+                                <p className="text-[10px] text-slate-500">Tất cả yêu cầu đã được xử lý.</p>
+                              </div>
+                            ) : (
+                              <div className="space-y-3 max-h-[55vh] overflow-y-auto no-scrollbar">
+                                {venues.filter(v => v.verification_status === "pending_verification").map((v) => {
+                                  const ownerUser = users.find(u => u.id === v.owner_user_id) || { name: "Người dùng ẩn", phone: v.phone };
+                                  return (
+                                    <div key={v.id} className="bg-appDark-card border border-amber-500/30 rounded-xl p-3.5 space-y-2.5 text-xs shadow-[0_0_15px_rgba(245,158,11,0.05)]">
+                                      <div className="flex justify-between items-start gap-2">
+                                        <div className="space-y-1 flex-1">
+                                          <h6 className="font-extrabold text-white text-sm flex items-center gap-1.5">
+                                            🏟️ {v.name}
+                                            <span className="text-[7px] bg-amber-500/15 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded font-black uppercase">
+                                              CHỜ DUYỆT
+                                            </span>
+                                          </h6>
+                                          <p className="text-[10px] text-slate-400">👤 Chủ sân: <strong className="text-slate-200">{ownerUser.name}</strong></p>
+                                          <p className="text-[10px] text-slate-400">📞 SĐT: <strong className="text-neon-green">{v.phone || ownerUser.phone}</strong></p>
+                                          <p className="text-[10px] text-slate-400">📍 Khu vực: <strong className="text-slate-300">{v.district}</strong></p>
+                                          <p className="text-[10px] text-slate-500">🗺️ {v.address}</p>
+                                          {v.notes && (
+                                            <p className="text-[10px] text-amber-400/70 italic bg-amber-500/5 rounded-lg px-2 py-1 border border-amber-500/10">
+                                              💬 "{v.notes}"
+                                            </p>
+                                          )}
+                                        </div>
+                                        <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-600/10 border border-amber-500/20 flex items-center justify-center text-2xl shrink-0">
+                                          🏗️
+                                        </div>
+                                      </div>
+
+                                      {v.amenities && v.amenities.length > 0 && (
+                                        <div className="flex flex-wrap gap-1">
+                                          {v.amenities.slice(0, 5).map((a, ai) => (
+                                            <span key={ai} className="text-[8px] bg-appDark-deep/60 border border-appDark-border/30 text-slate-400 px-1.5 py-0.5 rounded-full font-semibold">
+                                              {a}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+
+                                      <div className="flex gap-2 pt-2 border-t border-appDark-border/20">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setVenues(prev => prev.map(x => x.id === v.id ? { ...x, verification_status: "verified" } : x));
+                                            const ownerPhone = v.phone || ownerUser.phone;
+                                            if (ownerPhone && !pitchOwners.includes(ownerPhone)) {
+                                              setPitchOwners(prev => [...prev, ownerPhone]);
+                                            }
+                                            alert(`✅ Đã phê duyệt sân "${v.name}" và cấp quyền CHỦ SÂN cho số ${ownerPhone}!`);
+                                          }}
+                                          className="flex-1 font-bold bg-gradient-to-r from-neon-green to-emerald-500 text-appDark-deep py-2 rounded-lg text-[10px] uppercase hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_12px_rgba(16,185,129,0.2)]"
+                                        >
+                                          ✓ Phê Duyệt
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            if (confirm(`Từ chối yêu cầu của sân "${v.name}"?`)) {
+                                              setVenues(prev => prev.map(x => x.id === v.id ? { ...x, verification_status: "rejected" } : x));
+                                            }
+                                          }}
+                                          className="font-bold bg-red-500/15 hover:bg-red-500 text-red-400 hover:text-white px-4 py-2 rounded-lg text-[10px] uppercase border border-red-500/30 transition-all"
+                                        >
+                                          Từ Chối
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => alert(`📋 CHI TIẾT SÂN: ${v.name}\n📍 Địa chỉ: ${v.address}\n📞 SĐT: ${v.phone || ownerUser.phone}\n🏢 Quận: ${v.district}\n⭐ Rating: ${v.rating || "Chưa có"}\n📝 Ghi chú: ${v.notes || "Không có"}\n🎯 Tiện ích: ${(v.amenities || []).join(", ")}`)}
+                                          className="font-bold bg-appDark-deep hover:bg-slate-700 text-slate-400 hover:text-white px-3 py-2 rounded-lg text-[10px] uppercase border border-appDark-border/50 transition-all"
+                                        >
+                                          🔍
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* SUB-TAB 3: BXH SÂN (LEADERBOARD) */}
+                        {adminVenueSubTab === "slots" && (
+                          <div className="space-y-3">
+                            <div className="bg-appDark-card border border-appDark-border rounded-xl p-4 shadow-md flex flex-col">
+                              <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-2">
+                                <span>🏆</span> BẢNG XẾP HẠNG SÂN (TRẬN HOÀN THÀNH)
+                              </h4>
+                              <div className="space-y-3">
+                                {(() => {
+                                  // Mock calculation of completed matches per venue
+                                  const venueStats = venues.filter(v => v.verification_status === 'verified').map((v, idx) => {
+                                    // Generate some fake stats based on venue id
+                                    const completed = 150 - (parseInt(v.id || idx) * 12) + (idx * 5);
+                                    return { ...v, completedMatches: Math.max(5, completed) };
+                                  }).sort((a, b) => b.completedMatches - a.completedMatches).slice(0, 10); // Top 10
+
+                                  if (venueStats.length === 0) {
+                                    return <div className="text-center text-xs text-slate-500 py-4">Chưa có dữ liệu.</div>;
+                                  }
+
+                                  const maxVal = venueStats[0].completedMatches;
+
+                                  return venueStats.map((v, idx) => {
+                                    const percent = Math.round((v.completedMatches / maxVal) * 100);
+                                    let rankIcon = `#${idx + 1}`;
+                                    let textCol = 'text-white';
+                                    let bgCol = 'bg-neon-green';
+                                    if (idx === 0) { rankIcon = '🥇'; textCol = 'text-amber-400'; bgCol = 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]'; }
+                                    else if (idx === 1) { rankIcon = '🥈'; textCol = 'text-slate-300'; bgCol = 'bg-slate-300'; }
+                                    else if (idx === 2) { rankIcon = '🥉'; textCol = 'text-orange-400'; bgCol = 'bg-orange-400'; }
+
+                                    return (
+                                      <div key={v.id} className="space-y-1.5 group">
+                                        <div className="flex justify-between items-end text-[10px]">
+                                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                            <span className="font-black text-xs min-w-[20px]">{rankIcon}</span>
+                                            <span className={`font-bold text-xs truncate ${textCol}`}>{v.name}</span>
+                                          </div>
+                                          <div className="flex items-center gap-2 shrink-0">
+                                            <span className="text-slate-300 font-bold">{v.completedMatches} trận</span>
+                                          </div>
+                                        </div>
+                                        <div className="h-1.5 w-full bg-appDark-deep rounded-full overflow-hidden border border-appDark-border/50">
+                                          <div 
+                                            className={`h-full rounded-full transition-all duration-1000 ${bgCol}`} 
+                                            style={{ width: `${percent}%` }}
+                                          ></div>
+                                        </div>
+                                      </div>
+                                    );
+                                  });
+                                })()}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                       </div>
                     )}
 
