@@ -5402,7 +5402,20 @@ function App() {
                     const cleanCompare = (name) => (name || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/sân\s+/gi, "").replace(/[^a-z0-9]/g, "").trim();
                     const venueSlots = filteredBookingSlots.filter(s => s.venueId === v.id || cleanCompare(s.venueName) === cleanCompare(v.name));
                     
-                    // Always show the venue card to keep it on the board even if 0 slots match preference filters
+                    // Count real matches waiting for opponents associated with this venue
+                    const cleanVenueNameForMatch = (vName) => (vName || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/sân\s+/gi, "").replace(/[^a-z0-9]/g, "");
+                    const cleanVNameForMatch = cleanVenueNameForMatch(v.name);
+                    const venueMatches = matches.filter(m => {
+                      const isWaiting = m.status === 'Cần đối' || m.status === 'waiting_opponent' || m.status === 'pending_confirmation' || m.status === 'Đang chờ xác nhận';
+                      if (!isWaiting) return false;
+                      
+                      const mVenueName = cleanVenueNameForMatch(m.venue);
+                      return mVenueName === cleanVNameForMatch || m.venueId === v.id || (m.venue_slot_id && slots.some(s => (s.id === m.venue_slot_id || s.slotId === m.venue_slot_id) && (s.venueId === v.id || cleanVenueNameForMatch(s.venueName) === cleanVNameForMatch)));
+                    });
+
+                    // Skip the venue if it has no slots and no matches matching the active filters
+                    if (venueSlots.length === 0 && venueMatches.length === 0) return;
+
                     venuesWithSlots.push({
                       venue: v,
                       slots: venueSlots
@@ -9318,6 +9331,7 @@ function App() {
                 bookingTime={bookingTime}
                 bookingDate={bookingDate}
                 bookingCustomDate={bookingCustomDate}
+                bookingDuration={bookingDuration}
               />
             )}
 
@@ -9729,7 +9743,8 @@ function App() {
       bookingPitchType,
       bookingTime,
       bookingDate,
-      bookingCustomDate
+      bookingCustomDate,
+      bookingDuration
     }) {
       const venueAllSlots = React.useMemo(() => {
         return allSlots.filter(s => {
@@ -9807,11 +9822,53 @@ function App() {
 
       const dailySlots = slotsByDate[selectedDate] || [];
 
+      const filteredDailySlots = React.useMemo(() => {
+        return dailySlots.filter(slot => {
+          // Pitch Type Filter
+          if (bookingPitchType && bookingPitchType !== "Tất cả") {
+            if (slot.pitchType !== bookingPitchType) return false;
+          }
+          // Duration Filter
+          if (bookingDuration && bookingDuration !== "Tất cả") {
+            let targetDuration = 90;
+            if (bookingDuration === "60 phút" || bookingDuration === "60'") targetDuration = 60;
+            else if (bookingDuration === "90 phút" || bookingDuration === "90'") targetDuration = 90;
+            else if (bookingDuration === "120 phút" || bookingDuration === "120'") targetDuration = 120;
+
+            if (slot.duration !== targetDuration) return false;
+          }
+          // Time Filter
+          if (bookingTime && bookingTime !== "Tất cả") {
+            const startHour = slot.startTime ? (parseInt(slot.startTime.split(':')[0]) || 0) : 0;
+            if (bookingTime === "Sáng") {
+              if (startHour < 5 || startHour >= 12) return false;
+            } else if (bookingTime === "Chiều") {
+              if (startHour < 12 || startHour >= 17) return false;
+            } else if (bookingTime === "Tối") {
+              if (startHour < 17 || startHour >= 22) return false;
+            } else if (bookingTime === "Đêm") {
+              if (startHour >= 5 && startHour < 22) return false;
+            } else {
+              if (slot.startTime) {
+                const [selH, selM] = bookingTime.split(':').map(Number);
+                const [slotH, slotM] = slot.startTime.split(':').map(Number);
+                const selMins = selH * 60 + selM;
+                const slotMins = slotH * 60 + slotM;
+                if (Math.abs(selMins - slotMins) > 30) return false;
+              } else {
+                return false;
+              }
+            }
+          }
+          return true;
+        });
+      }, [dailySlots, bookingPitchType, bookingDuration, bookingTime]);
+
       // Sort order: holding first, available second, booked last
       const sortedDailySlots = React.useMemo(() => {
         const score = { 'holding': 1, 'available': 2, 'booked': 3 };
-        return [...dailySlots].sort((a, b) => score[a.status] - score[b.status]);
-      }, [dailySlots]);
+        return [...filteredDailySlots].sort((a, b) => score[a.status] - score[b.status]);
+      }, [filteredDailySlots]);
 
       return (
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/80 backdrop-blur-md p-0 sm:p-4">
@@ -9836,6 +9893,19 @@ function App() {
               </div>
               <button type="button" onClick={onClose} className="w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white font-black transition-all flex items-center justify-center shrink-0">✕</button>
             </div>
+
+            {/* Filter Indicator inside Modal */}
+            {((bookingPitchType && bookingPitchType !== "Tất cả") || (bookingDuration && bookingDuration !== "Tất cả") || (bookingTime && bookingTime !== "Tất cả")) && (
+              <div className="px-5 py-2 bg-neon-green/5 border-b border-appDark-border/40 flex justify-between items-center text-[10px] text-slate-400 shrink-0 font-sans">
+                <span className="flex items-center gap-1 flex-wrap">
+                  🎯 Đang lọc: 
+                  {bookingPitchType && bookingPitchType !== "Tất cả" && <strong className="text-neon-green px-1 py-0.5 rounded bg-neon-green/10">{bookingPitchType}</strong>}
+                  {bookingDuration && bookingDuration !== "Tất cả" && <strong className="text-cyan-400 px-1 py-0.5 rounded bg-cyan-400/10">{bookingDuration}</strong>}
+                  {bookingTime && bookingTime !== "Tất cả" && <strong className="text-amber-400 px-1 py-0.5 rounded bg-amber-400/10">{bookingTime}</strong>}
+                </span>
+                <span className="text-[9px] text-slate-500 font-bold">({sortedDailySlots.length} slot phù hợp)</span>
+              </div>
+            )}
 
             {/* Date Selector (Horizontal Tags) */}
             {sortedDates.length > 0 ? (
