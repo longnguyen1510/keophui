@@ -874,7 +874,46 @@ function App() {
         }
       }, [currentUser, venues]);
 
-      
+      // Handle shared match link on mount
+      useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const matchIdParam = urlParams.get('matchId');
+        if (matchIdParam) {
+          // Clean up matchId from URL immediately so it doesn't trigger again on subsequent renders/reloads
+          const cleanUrl = window.location.origin + window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+
+          const foundMatch = matches.find(m => m.id === matchIdParam);
+          if (foundMatch) {
+            if (currentUser) {
+              setSelectedMatch(foundMatch);
+              setCurrentTab("keo"); // redirect to matches list tab where modal is visible
+            } else {
+              localStorage.setItem("pending_share_match_id", matchIdParam);
+              setCurrentTab("toi");
+              alert("⚽ Chào mừng bạn đến với Kèo Phủi!\n\nVui lòng đăng nhập để xem thông tin chi tiết và tham gia trận đấu này.");
+            }
+          }
+        }
+      }, [matches, currentUser]);
+
+      // Check for pending share match after login
+      useEffect(() => {
+        if (currentUser) {
+          const pendingId = localStorage.getItem("pending_share_match_id");
+          if (pendingId) {
+            const foundMatch = matches.find(m => m.id === pendingId);
+            if (foundMatch) {
+              setSelectedMatch(foundMatch);
+              setCurrentTab("keo"); // Go to matches tab to show the modal
+              setTimeout(() => {
+                alert(`⚽ Đã mở chi tiết trận đấu bạn muốn xem!`);
+              }, 300);
+            }
+            localStorage.removeItem("pending_share_match_id");
+          }
+        }
+      }, [currentUser, matches]);
 
 
       // Real-time slot reservation expiration cleaner (ticks every 5 seconds)
@@ -10335,6 +10374,30 @@ function App() {
       const venueObj = venues.find(v => v.name === match.venue);
       const displayAddress = match.address || (venueObj ? venueObj.address : `${match.venue || "Sân bóng"} ${match.district || ""}`.trim());
       const [showEditModal, setShowEditModal] = useState(false);
+
+      const handleShare = () => {
+        const shareUrl = `${window.location.origin}${window.location.pathname}?matchId=${match.id}`;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(shareUrl).then(() => {
+            alert("🔗 Đã sao chép liên kết chia sẻ trận đấu!\nBạn có thể gửi liên kết này cho bạn bè hoặc đối thủ.");
+          }).catch(() => {
+            fallbackCopyText(shareUrl);
+          });
+        } else {
+          fallbackCopyText(shareUrl);
+        }
+      };
+
+      const fallbackCopyText = (text) => {
+        const tempInput = document.createElement("input");
+        tempInput.value = text;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempInput);
+        alert("🔗 Đã sao chép liên kết chia sẻ trận đấu!");
+      };
+
       const getLevelBadgeClass = (level) => {
         switch(level) {
           case 'Mạnh': return 'text-red-400 bg-red-400/10 border border-red-500/20';
@@ -10376,12 +10439,22 @@ function App() {
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
                   KÈO ĐÃ HỦY THÀNH CÔNG
                 </span>
-                <button 
-                  onClick={onClose}
-                  className="w-7 h-7 rounded-full bg-slate-800 border border-appDark-border flex items-center justify-center hover:bg-slate-700 text-slate-400 font-bold"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button 
+                    onClick={handleShare}
+                    className="w-7 h-7 rounded-full bg-slate-800 border border-appDark-border flex items-center justify-center hover:bg-slate-700 text-sky-400 font-bold"
+                    title="Chia sẻ trận đấu"
+                  >
+                    🔗
+                  </button>
+                  <button 
+                    onClick={onClose}
+                    className="w-7 h-7 rounded-full bg-slate-800 border border-appDark-border flex items-center justify-center hover:bg-slate-700 text-slate-400 font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+
               </div>
 
               {/* CANCELLED REASON CARD */}
@@ -10441,12 +10514,22 @@ function App() {
                   <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-pulse"></span>
                   KÈO ĐÃ HẾT HẠN
                 </span>
-                <button 
-                  onClick={onClose}
-                  className="w-7 h-7 rounded-full bg-slate-800 border border-appDark-border flex items-center justify-center hover:bg-slate-700 text-slate-400 font-bold"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button 
+                    onClick={handleShare}
+                    className="w-7 h-7 rounded-full bg-slate-800 border border-appDark-border flex items-center justify-center hover:bg-slate-700 text-sky-400 font-bold"
+                    title="Chia sẻ trận đấu"
+                  >
+                    🔗
+                  </button>
+                  <button 
+                    onClick={onClose}
+                    className="w-7 h-7 rounded-full bg-slate-800 border border-appDark-border flex items-center justify-center hover:bg-slate-700 text-slate-400 font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+
               </div>
 
               {/* EXPIRED CARD */}
@@ -10501,12 +10584,22 @@ function App() {
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                   KÈO ĐÃ CHỐT THÀNH CÔNG
                 </span>
-                <button 
-                  onClick={onClose}
-                  className="w-7 h-7 rounded-full bg-slate-800 border border-appDark-border flex items-center justify-center hover:bg-slate-700 text-slate-400 font-bold"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button 
+                    onClick={handleShare}
+                    className="w-7 h-7 rounded-full bg-slate-800 border border-appDark-border flex items-center justify-center hover:bg-slate-700 text-sky-400 font-bold"
+                    title="Chia sẻ trận đấu"
+                  >
+                    🔗
+                  </button>
+                  <button 
+                    onClick={onClose}
+                    className="w-7 h-7 rounded-full bg-slate-800 border border-appDark-border flex items-center justify-center hover:bg-slate-700 text-slate-400 font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+
               </div>
 
               {/* BOOKING CODE CARD */}
@@ -10615,12 +10708,21 @@ function App() {
                   <span className="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
                   TRẬN ĐẤU ĐÃ KẾT THÚC
                 </span>
-                <button 
-                  onClick={onClose}
-                  className="w-7 h-7 rounded-full bg-slate-800 border border-appDark-border flex items-center justify-center hover:bg-slate-700 text-slate-400 font-bold"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button 
+                    onClick={handleShare}
+                    className="w-7 h-7 rounded-full bg-slate-800 border border-appDark-border flex items-center justify-center hover:bg-slate-700 text-sky-400 font-bold"
+                    title="Chia sẻ trận đấu"
+                  >
+                    🔗
+                  </button>
+                  <button 
+                    onClick={onClose}
+                    className="w-7 h-7 rounded-full bg-slate-800 border border-appDark-border flex items-center justify-center hover:bg-slate-700 text-slate-400 font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
 
               {isFriendly && (
@@ -10794,12 +10896,21 @@ function App() {
                   </div>
                 </div>
               </div>
-              <button 
-                onClick={onClose}
-                className="w-7 h-7 rounded-full bg-slate-800 border border-appDark-border flex items-center justify-center hover:bg-slate-700 text-slate-400 font-bold"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button 
+                  onClick={handleShare}
+                  className="w-7 h-7 rounded-full bg-slate-800 border border-appDark-border flex items-center justify-center hover:bg-slate-700 text-sky-400 font-bold"
+                  title="Chia sẻ trận đấu"
+                >
+                  🔗
+                </button>
+                <button 
+                  onClick={onClose}
+                  className="w-7 h-7 rounded-full bg-slate-800 border border-appDark-border flex items-center justify-center hover:bg-slate-700 text-slate-400 font-bold"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             {/* Premium Request Status Card at top */}
