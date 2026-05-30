@@ -456,6 +456,29 @@ function App() {
       const [activeRoleMode, setActiveRoleMode] = useState(() => {
         try { return localStorage.getItem("activeRoleMode") || "cầu thủ"; } catch { return "cầu thủ"; }
       });
+
+      // Strict enforcement: Fallback if user somehow gets an invalid role mode
+      useEffect(() => {
+        if (!currentUser && activeRoleMode !== "cầu thủ") {
+          setActiveRoleMode("cầu thủ");
+          return;
+        }
+        if (currentUser) {
+          const isAdminCheck = currentUser.roles && currentUser.roles.includes("super_admin");
+          const isOwnerCheck = isAdminCheck || venues.some(v => v.owner_user_id === currentUser.id && v.verification_status === 'verified');
+          
+          const validRoles = ["cầu thủ"];
+          if (isOwnerCheck) validRoles.push("chủ sân");
+          if (isAdminCheck) validRoles.push("admin");
+
+          if (!validRoles.includes(activeRoleMode)) {
+            setActiveRoleMode("cầu thủ");
+            if (currentTab.startsWith("owner_") || currentTab.startsWith("admin_")) {
+              setCurrentTab("toi");
+            }
+          }
+        }
+      }, [currentUser, venues, activeRoleMode, currentTab]);
       const [adminSubTab, setAdminSubTab] = useState("history"); // 'history' | 'manage' | 'pitch_owners'
       const [adminVenueSubTab, setAdminVenueSubTab] = useState("venues"); // 'venues' | 'registrations' | 'slots'
       const [adminVenueSearch, setAdminVenueSearch] = useState("");
@@ -1609,6 +1632,11 @@ function App() {
         
         let targetUser = users.find(u => u.phone === trimmedPhone);
         
+        if (targetUser && targetUser.status === 'locked') {
+          alert("🚫 Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin để được hỗ trợ.");
+          return;
+        }
+        
         if (trimmedPhone.toLowerCase() === "admin") {
           targetUser = users.find(u => u.phone === "admin") || {
             id: "u_admin",
@@ -1729,6 +1757,12 @@ function App() {
 
         // --- LOCAL MOCK FALLBACK ---
         let targetUser = users.find(u => u.phone === trimmedPhone);
+        
+        if (targetUser && targetUser.status === 'locked') {
+          alert("🚫 Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin để được hỗ trợ.");
+          setShowGoogleModal(false);
+          return;
+        }
         
         if (targetUser) {
           const updatedUser = {
@@ -3796,10 +3830,19 @@ function App() {
           };
         });
 
-        alert("🔥 Đặt sân thành công! Hệ thống đã tự động liên kết với slot và chuyển sang giữ chỗ (on_hold). Hệ thống sẽ chuyển bạn sang trang Quản lý Booking của Chủ Sân để theo dõi.");
+        const isAdminCheck = currentUser?.roles && currentUser?.roles.includes("super_admin");
+        const isOwnerCheck = isAdminCheck || venues.some(v => v.owner_user_id === currentUser?.id && v.verification_status === 'verified');
+        
+        if (isOwnerCheck) {
+          alert("🔥 Đặt sân thành công! Hệ thống đã tự động liên kết với slot và chuyển sang giữ chỗ (on_hold). Hệ thống sẽ chuyển bạn sang trang Quản lý Booking của Chủ Sân để theo dõi.");
+          setActiveRoleMode("chủ sân");
+          setCurrentTab("owner_booking");
+        } else {
+          alert("🔥 Đặt sân thành công! Hệ thống đã tự động liên kết với slot và chuyển sang giữ chỗ (on_hold). Bạn có thể theo dõi kèo tại tab 'Tôi'.");
+          setActiveRoleMode("cầu thủ");
+          setCurrentTab("toi");
+        }
         closeModal();
-        setActiveRoleMode("chủ sân");
-        setCurrentTab("owner_booking");
       };
 
       // Handle creating recruitment match (Đăng tuyển người chạy lẻ)
@@ -4391,7 +4434,8 @@ function App() {
       const availableRoles = ["cầu thủ"];
       if (currentUser) {
         const isAdminCheck = currentUser.roles && currentUser.roles.includes("super_admin");
-        const isOwnerCheck = isAdminCheck || pitchOwners.includes(currentUser.phone) || venues.some(v => v.owner_user_id === currentUser.id && v.verification_status === 'verified');
+        // Strict enforcement: ONLY admin or verified venue owners get the "chủ sân" role layout access.
+        const isOwnerCheck = isAdminCheck || venues.some(v => v.owner_user_id === currentUser.id && v.verification_status === 'verified');
         
         if (isOwnerCheck) availableRoles.push("chủ sân");
         if (isAdminCheck) availableRoles.push("admin");
@@ -5109,6 +5153,30 @@ function App() {
                         <div className="relative z-20 shrink-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md border border-sky-400/30 rounded-xl p-2.5 shadow-md hover:scale-105 active:scale-95 cursor-pointer transition-all duration-350"
                             onClick={() => triggerActionWithAuth('venue_registration')}>
                           <span className="text-[10px] font-black text-sky-400 tracking-wider uppercase text-center leading-tight">Đăng<br/>Ký Ngay</span>
+                        </div>
+                      </div>
+                    );
+                  } else if (myVenue && myVenue.verification_status === 'pending_verification') {
+                    return (
+                      <div 
+                        className="relative h-20 rounded-2xl overflow-hidden border border-amber-500/30 shadow-lg flex items-center justify-between p-4 group mb-4 bg-appDark-card"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 to-transparent z-10"></div>
+                        
+                        <div className="relative z-20 space-y-1 max-w-[80%] text-left">
+                          <span className="inline-block text-[9px] font-black tracking-widest text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full uppercase">
+                            ĐANG CHỜ DUYỆT
+                          </span>
+                          <h2 className="text-xs font-black text-white leading-tight">
+                            Hồ sơ đăng ký chủ sân đang chờ Admin xử lý
+                          </h2>
+                          <p className="text-[9.5px] text-slate-400 font-semibold leading-snug">
+                            Vui lòng chờ Admin duyệt đồng ý để có thể sử dụng giao diện layout chủ sân.
+                          </p>
+                        </div>
+                        
+                        <div className="relative z-20 shrink-0 flex flex-col items-center justify-center">
+                          <span className="text-[20px] animate-pulse">⏳</span>
                         </div>
                       </div>
                     );
@@ -9255,7 +9323,7 @@ function App() {
                                       <div className="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-appDark-border/20">
                                         <div className="bg-appDark-deep/50 rounded-lg p-1.5 text-left space-y-0.5">
                                           <div className="text-[8px] text-slate-500 font-bold uppercase">Ngày tham gia</div>
-                                          <div className="text-[10px] font-black text-white">{v.joinDate || "01/01/2024"}</div>
+                                          <div className="text-[10px] font-black text-white">{v.joinDate ? v.joinDate : (v.created_at ? new Date(v.created_at).toLocaleDateString('vi-VN') : (v.id && String(v.id).startsWith('v_') && parseInt(String(v.id).split('_')[1]) > 1000000000000 ? new Date(parseInt(String(v.id).split('_')[1])).toLocaleDateString('vi-VN') : new Date().toLocaleDateString('vi-VN')))}</div>
                                         </div>
                                         <div className="bg-appDark-deep/50 rounded-lg p-1.5 text-left space-y-0.5">
                                           <div className="text-[8px] text-slate-500 font-bold uppercase">Lần HĐ Cuối</div>
@@ -10386,10 +10454,18 @@ function App() {
                         const slotVenue = selectedBookingSlot.venueName;
 
                         setSelectedBookingSlot(null);
-                        alert(`✅ Đặt sân thành công! Khung giờ lúc ${slotTime} - ${slotEndTime} tại ${slotVenue} hiện đã được chốt riêng cho bạn. Hệ thống sẽ tự động đưa bạn về trang Quản lý Booking của Chủ Sân để xem.`);
-                        
-                        setActiveRoleMode("chủ sân");
-                        setCurrentTab("owner_booking");
+                        const isAdminCheck = currentUser?.roles && currentUser?.roles.includes("super_admin");
+                        const isOwnerCheck = isAdminCheck || venues.some(v => v.owner_user_id === currentUser?.id && v.verification_status === 'verified');
+
+                        if (isOwnerCheck) {
+                          alert(`✅ Đặt sân thành công! Khung giờ lúc ${slotTime} - ${slotEndTime} tại ${slotVenue} hiện đã được chốt riêng cho bạn. Hệ thống sẽ tự động đưa bạn về trang Quản lý Booking của Chủ Sân để xem.`);
+                          setActiveRoleMode("chủ sân");
+                          setCurrentTab("owner_booking");
+                        } else {
+                          alert(`✅ Đặt sân thành công! Khung giờ lúc ${slotTime} - ${slotEndTime} tại ${slotVenue} hiện đã được chốt riêng cho bạn. Bạn có thể theo dõi tại tab 'Tôi'.`);
+                          setActiveRoleMode("cầu thủ");
+                          setCurrentTab("toi");
+                        }
                       }}
                       className="w-full py-3.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black uppercase text-xs rounded-xl shadow-md neon-glow-blue hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
                     >
